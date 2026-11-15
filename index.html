@@ -194,6 +194,14 @@
   .cvflip .flipbtn{width:34px; height:34px; border-radius:50%; border:3px solid var(--card); background:var(--btn); color:var(--btntext); font-size:15px; cursor:pointer; padding:0;}
   .cvquote{flex:1; text-align:right; font-size:13.5px; min-height:20px; min-width:0;}
   .netpanel .mainbtn{margin-top:12px;}
+  /* ===== Aktivitas beli/jual (v7) ===== */
+  .pressbar{display:flex; height:6px; border-radius:3px; overflow:hidden; margin:2px 0 8px; background:var(--bg2);}
+  .pb-buy{background:var(--green); height:100%;}
+  .pb-sell{background:var(--red); height:100%;}
+  .actrow{display:flex; align-items:center; gap:8px; font-size:12px; padding:4.5px 4px; border-bottom:1px solid var(--border);}
+  .actrow .side{font-weight:800; width:38px; flex:none;}
+  .actrow .tm{color:var(--hint); margin-left:auto; flex:none;}
+  .actrow .usd{color:var(--hint); flex:none; min-width:64px; text-align:right;}
 </style>
 </head>
 <body>
@@ -230,7 +238,7 @@
 <section class="view" id="viewDetail">
   <button class="backbtn" id="backBtn">‹ Kembali</button>
   <div style="display:flex; align-items:center; gap:10px;">
-    <img class="coinicon" id="dIcon" alt="" style="width:36px; height:36px;">
+    <img class="coinicon" id="dIcon" alt="" referrerpolicy="no-referrer" style="width:36px; height:36px;">
     <div>
       <div style="font-size:17px; font-weight:800;"><span id="dSym">-</span><span class="livebadge" id="dLive"><span class="livedot amber" id="dLiveDot"></span><span id="dLiveTxt">AUTO</span></span></div>
       <div class="muted" id="dName">-</div>
@@ -266,6 +274,11 @@
       <div><div class="obcoltitle"><span>Bid (Harga)</span><span>Jumlah</span></div><div class="obbids" id="obBids"></div></div>
       <div><div class="obcoltitle"><span>Ask (Harga)</span><span>Jumlah</span></div><div class="obasks" id="obAsks"></div></div>
     </div>
+  </div>
+  <div class="obwrap" id="actWrap" style="display:none;">
+    <div class="obhead"><span>Aktivitas Terakhir</span><span class="muted" id="actMeta" style="font-weight:400; font-size:12px;"></span></div>
+    <div class="pressbar"><div class="pb-buy" id="pbBuy"></div><div class="pb-sell" id="pbSell"></div></div>
+    <div id="actList"></div>
   </div>
   <p class="muted" id="dUpdated">—</p>
 </section>
@@ -534,6 +547,15 @@ var CAT_NOTES = {
   pump: 'Koin Pump.fun & meme Solana yang sedang diboost (DexScreener) · ketuk untuk grafiknya.',
   fav: 'Token favoritmu — tersimpan di perangkat ini. Ketuk ☆ pada halaman grafik untuk menambah.'
 };
+function letterIcon(sym) {
+  var ch = (sym || '?').charAt(0).toUpperCase();
+  var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><circle cx='18' cy='18' r='18' fill='#2aabee'/><text x='18' y='23' font-size='14' font-family='sans-serif' font-weight='bold' fill='#ffffff' text-anchor='middle'>" + ch + '</text></svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function iconFallback(img) {
+  img.onerror = null;
+  img.src = letterIcon(img.getAttribute('data-sym') || '?');
+}
 function skels() { return '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>'; }
 function listError(e) {
   $('coinList').innerHTML = '<div class="loading">' + (e && e.message === 'ratelimit' ? 'Server data sedang sibuk (batas pemakaian API). Tunggu sebentar lalu ketuk ⟳.' : 'Gagal memuat data. Periksa koneksi lalu ketuk ⟳.') + '</div>';
@@ -580,7 +602,7 @@ function cgRowHtml(c, idx) {
   prevPrices[c.id] = c.current_price;
   var delay = Math.min(idx, 14) * 25;
   return '<div class="coinrow" data-kind="cg" data-id="' + esc(c.id) + '" style="animation-delay:' + delay + 'ms">'
-    + '<img class="coinicon" loading="lazy" src="' + esc(c.image || '') + '" alt="">'
+    + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(c.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc(c.image || '') + '" alt="">'
     + '<div><div class="sym">' + esc(c.symbol.toUpperCase()) + '<span style="color:var(--hint); font-weight:400; font-size:12px;"> /USD</span></div><div class="nm">Vol $' + fmtBig(c.total_volume) + '</div></div>'
     + '<div class="pricecol"><div class="price' + flash + '">$' + fmtPrice(c.current_price) + '</div><div class="sub2">MCap $' + fmtBig(c.market_cap) + '</div></div>'
     + '<div class="chgpill ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</div></div>';
@@ -672,10 +694,10 @@ function gtRowHtml(pool, incMap, idx, hot) {
   var chg = parseFloat((a.price_change_percentage || {}).h24 || 0);
   var delay = Math.min(idx, 14) * 25;
   return '<div class="coinrow" data-kind="gt" data-net="' + esc(net) + '" data-pool="' + esc(a.address) + '" style="animation-delay:' + delay + 'ms">'
-    + '<img class="coinicon" loading="lazy" src="' + esc(tok.image_url || '') + '" alt="">'
+    + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(sym || '?') + '" onerror="iconFallback(this)" src="' + esc(tok.image_url || '') + '" alt="">'
     + '<div><div class="sym">' + (hot ? '<span class="flame">🔥</span> ' : '') + esc(sym) + '<span class="netbadge">' + esc(netLabel(net)) + '</span></div>'
     + '<div class="nm">' + esc(tok.name || a.name || '') + '</div></div>'
-    + '<div class="pricecol"><div class="price">$' + fmtPrice(a.base_token_price_usd) + '</div><div class="sub2">Vol $' + fmtBig((a.volume_usd || {}).h24) + '</div></div>'
+    + '<div class="pricecol"><div class="price">$' + fmtPrice(a.base_token_price_usd) + '</div><div class="sub2">Vol $' + fmtBig((a.volume_usd || {}).h24) + ' · 1j ' + (parseFloat(((a.price_change_percentage || {}).h1) || 0) >= 0 ? '+' : '') + parseFloat(((a.price_change_percentage || {}).h1) || 0).toFixed(2) + '%</div></div>'
     + '<div class="chgpill ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</div></div>';
 }
 function renderGtList(d, hot) {
@@ -721,7 +743,7 @@ function loadTrending(silent) {
         var chg = parseFloat((p.priceChange || {}).h24 || 0);
         var gtNet = dsToGtNet(p.chainId);
         html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + (i * 25) + 'ms">'
-          + '<img class="coinicon" loading="lazy" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
+          + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
           + '<div><div class="sym">⚡ ' + esc(p.baseToken.symbol) + '<span class="netbadge">DEXSCREENER</span></div>'
           + '<div class="nm">' + esc(p.baseToken.name) + '</div></div>'
           + '<div class="pricecol"><div class="price">$' + fmtPrice(p.priceUsd) + '</div><div class="sub2">Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
@@ -759,7 +781,7 @@ function loadPump(silent) {
       var delay = Math.min(i, 14) * 25;
       var gtNet = dsToGtNet(p.chainId);
       html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + delay + 'ms">'
-        + '<img class="coinicon" loading="lazy" src="' + esc(r.boost.icon || (p.info || {}).imageUrl || '') + '" alt="">'
+        + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc(r.boost.icon || (p.info || {}).imageUrl || '') + '" alt="">'
         + '<div><div class="sym">🚀 ' + esc(p.baseToken.symbol) + '<span class="netbadge">PUMP.FUN</span></div>'
         + '<div class="nm">' + esc(p.baseToken.name) + '</div></div>'
         + '<div class="pricecol"><div class="price">$' + fmtPrice(p.priceUsd) + '</div><div class="sub2">Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
@@ -865,7 +887,7 @@ function remoteSearch(q) {
         for (var j = 0; j < allCoins.length; j++) { if (allCoins[j].id === c.id) { known = allCoins[j]; break; } }
         var chgK = known ? parseFloat(known.price_change_percentage_24h || 0) : 0;
         html += '<div class="coinrow" data-kind="cg" data-id="' + esc(c.id) + '" style="animation-delay:' + Math.min(i, 10) * 25 + 'ms">'
-          + '<img class="coinicon" loading="lazy" src="' + esc(c.large || c.thumb || '') + '" alt="">'
+          + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(c.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc(c.large || c.thumb || '') + '" alt="">'
           + '<div><div class="sym">' + esc((c.symbol || '').toUpperCase()) + '</div><div class="nm">#' + (c.market_cap_rank || '-') + ' ' + esc(c.name) + '</div></div>'
           + (known
             ? '<div class="pricecol"><div class="price">$' + fmtPrice(known.current_price) + '</div><div class="sub2">MCap $' + fmtBig(known.market_cap) + '</div></div><div class="chgpill ' + (chgK >= 0 ? 'up' : 'down') + '">' + (chgK >= 0 ? '+' : '') + chgK.toFixed(2) + '%</div>'
@@ -886,7 +908,7 @@ function remoteSearch(q) {
         var chg = parseFloat((p.priceChange || {}).h24 || 0);
         var gtNet = dsToGtNet(p.chainId);
         html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + Math.min(i, 10) * 25 + 'ms">'
-          + '<img class="coinicon" loading="lazy" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
+          + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
           + '<div><div class="sym">' + esc(p.baseToken.symbol) + '<span class="netbadge">' + esc(netLabel(gtNet || p.chainId)) + '</span></div>'
           + '<div class="nm">' + esc(p.baseToken.name) + ' · ' + esc(p.dexId) + '</div></div>'
           + '<div class="pricecol"><div class="price">$' + fmtPrice(p.priceUsd) + '</div><div class="sub2">Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
@@ -908,6 +930,7 @@ var livePollTimer = null;
 var liveStatsTimer = null;
 var liveMode = 'off';
 var obTimer = null;
+var actTimer = null;
 var anchorPrice = 0;
 var lastLivePrice = 0;
 var lastShownPrice = 0;
@@ -951,15 +974,18 @@ function openDetail(D) {
   loadChart(true);
   startLive();
   startOrderBook();
+  startActivity();
 }
 function closeDetail() {
   currentDetail = null;
   stopLive();
   $('obWrap').style.display = 'none';
+  $('actWrap').style.display = 'none';
   if (chartAnim) cancelAnimationFrame(chartAnim);
   showView('chart');
 }
 $('backBtn').addEventListener('click', closeDetail);
+$('dIcon').onerror = function () { this.onerror = null; this.src = letterIcon((currentDetail && currentDetail.symbol) || '?'); };
 function detailFavKey() {
   if (!currentDetail) return null;
   if (currentDetail.kind === 'cg') return 'cg:' + currentDetail.id;
@@ -981,8 +1007,47 @@ $('favBtn').addEventListener('click', function () {
   haptic();
   syncFavBtn();
 });
-$('buyBtn').addEventListener('click', function () { haptic(); showView('swap'); toast('Pilih jaringan & token untuk membeli di tab Swap.'); });
-$('sellBtn').addEventListener('click', function () { haptic(); showView('swap'); toast('Pilih jaringan & token untuk menjual di tab Swap.'); });
+$('buyBtn').addEventListener('click', function () { gotoSwap('buy'); });
+$('sellBtn').addEventListener('click', function () { gotoSwap('sell'); });
+function gotoSwap(side) {
+  haptic();
+  var D = currentDetail;
+  var msg = side === 'buy' ? 'Pilih jaringan & token untuk membeli di tab Swap.' : 'Pilih jaringan & token untuk menjual di tab Swap.';
+  if (D && D.kind === 'gt' && window.setSwapNet) {
+    var sym = (D.symbol || '').toUpperCase();
+    if (D.net === 'ton') {
+      window.setSwapNet('ton');
+      try {
+        if (sym === 'USDT' || sym === 'TON') {
+          if (side === 'buy') { $('tonTo').value = sym; $('tonFrom').value = sym === 'TON' ? 'USDT' : 'TON'; }
+          else { $('tonFrom').value = sym; $('tonTo').value = sym === 'TON' ? 'USDT' : 'TON'; }
+        }
+      } catch (e) {}
+      msg = 'Swap disesuaikan ke jaringan TON.';
+    } else if (D.net === 'solana') {
+      window.setSwapNet('sol');
+      try {
+        if (typeof SOL_TOKENS !== 'undefined' && SOL_TOKENS[sym]) {
+          if (side === 'buy') $('solTo').value = sym; else $('solFrom').value = sym;
+        }
+      } catch (e) {}
+      msg = 'Swap disesuaikan ke jaringan Solana.';
+    } else if (D.net === 'bsc' || D.net === 'eth' || D.net === 'base') {
+      window.setSwapNet('evm');
+      var chainId = D.net === 'bsc' ? '56' : D.net === 'base' ? '8453' : '1';
+      try {
+        $('evmChain').value = chainId;
+        if (typeof fillEvmTokens === 'function') fillEvmTokens();
+        if (typeof EVM_CHAINS !== 'undefined' && EVM_CHAINS[chainId] && EVM_CHAINS[chainId].tokens[sym]) {
+          if (side === 'buy') $('evmTo').value = sym; else $('evmFrom').value = sym;
+        }
+      } catch (e) {}
+      msg = 'Swap disesuaikan ke jaringan ' + netLabel(D.net) + '.';
+    }
+  }
+  showView('swap');
+  toast(msg);
+}
 $('segRanges').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
   currentDays = b.getAttribute('data-days');
@@ -1173,9 +1238,66 @@ function loadOrderBook() {
 }
 function startOrderBook() {
   if (obTimer) { clearInterval(obTimer); obTimer = null; }
+  if (actTimer) { clearInterval(actTimer); actTimer = null; }
   if (!currentDetail || currentDetail.kind !== 'cg') { $('obWrap').style.display = 'none'; return; }
   loadOrderBook();
   obTimer = setInterval(loadOrderBook, 3000);
+}
+/* ----- Aktivitas beli/jual terakhir ----- */
+function actRow(side, price, qty, usd, date) {
+  var tm = ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2) + ':' + ('0' + date.getSeconds()).slice(-2);
+  return '<div class="actrow"><span class="side" style="color:var(--' + (side === 'buy' ? 'green' : 'red') + ');">' + (side === 'buy' ? 'BELI' : 'JUAL') + '</span>'
+    + '<span>$' + fmtPrice(price) + '</span>'
+    + '<span>' + fmtQty(qty) + '</span>'
+    + '<span class="usd">$' + fmtBig(usd) + '</span>'
+    + '<span class="tm">' + tm + '</span></div>';
+}
+function renderActivity(html, buys, sells, src) {
+  $('actList').innerHTML = html || '<div class="loading">Belum ada aktivitas.</div>';
+  var tot = (buys + sells) || 1;
+  $('pbBuy').style.width = Math.round(buys / tot * 100) + '%';
+  $('pbSell').style.width = Math.round(sells / tot * 100) + '%';
+  $('actMeta').textContent = 'Beli ' + buys + ' · Jual ' + sells + ' · ' + src;
+  $('actWrap').style.display = '';
+}
+function loadActivity() {
+  if (!currentDetail) return;
+  var D = currentDetail;
+  if (D.kind === 'cg') {
+    if (D.onBinance === false || !D.symbol) { $('actWrap').style.display = 'none'; return; }
+    var pair = (D.symbol + 'USDT').toUpperCase();
+    fetchJson(BIN + '/api/v3/trades?symbol=' + pair + '&limit=20').then(function (ts) {
+      if (!currentDetail || currentDetail.kind !== 'cg' || !ts || !ts.length) return;
+      var buys = 0, sells = 0, html = '';
+      ts.slice().reverse().forEach(function (t) {
+        var isSell = !!t.isBuyerMaker;
+        if (isSell) sells++; else buys++;
+        var qty = parseFloat(t.qty), price = parseFloat(t.price);
+        html += actRow(isSell ? 'sell' : 'buy', price, qty, qty * price, new Date(t.time));
+      });
+      renderActivity(html, buys, sells, 'Binance');
+    }).catch(function () {});
+  } else {
+    fetchJson(GT + '/networks/' + encodeURIComponent(D.net) + '/pools/' + encodeURIComponent(D.pool) + '/trades').then(function (d) {
+      if (!currentDetail || currentDetail.kind !== 'gt' || !d || !d.data) return;
+      var buys = 0, sells = 0, html = '';
+      d.data.slice(0, 20).forEach(function (tr) {
+        var a = tr.attributes || {};
+        var isBuy = a.kind === 'buy';
+        if (isBuy) buys++; else sells++;
+        var price = parseFloat(isBuy ? a.price_to_in_usd : a.price_from_in_usd) || 0;
+        var qty = parseFloat(isBuy ? a.to_token_amount : a.from_token_amount) || 0;
+        html += actRow(isBuy ? 'buy' : 'sell', price, qty, parseFloat(a.volume_in_usd || 0), new Date(a.block_timestamp));
+      });
+      renderActivity(html, buys, sells, 'Pool DEX');
+    }).catch(function () {});
+  }
+}
+function startActivity() {
+  if (actTimer) { clearInterval(actTimer); actTimer = null; }
+  if (!currentDetail) return;
+  loadActivity();
+  actTimer = setInterval(loadActivity, 15000);
 }
 /* ----- LIVE ----- */
 function stopLive() {
@@ -1399,6 +1521,7 @@ function drawChart(progress) {
     });
   }
   pills.forEach(function (p) { p.addEventListener('click', function () { haptic(); setNet(p.getAttribute('data-net')); }); });
+  window.setSwapNet = setNet;
   setNet('ton');
 })();
 /* ----- Mulai ----- */
