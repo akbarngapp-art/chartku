@@ -12,15 +12,15 @@
     --green:#16c784; --red:#ea3943; --btn:#2aabee; --btntext:#ffffff;
   }
   [data-theme="dark"]{
-    --bg:#0a1120; --bg2:rgba(21,32,48,.82); --card:rgba(19,30,46,.88);
+    --bg:#0a1120; --bg2:#152033; --card:#121d2f;
     --text:#ffffff; --hint:#8fa3ba; --link:#6ab2f2;
-    --border:rgba(255,255,255,.08); --input:rgba(10,17,32,.75);
+    --border:rgba(255,255,255,.08); --input:#0c1524;
     --shadow:0 8px 28px rgba(0,0,0,.45);
     --blob1:rgba(28,88,166,.55); --blob2:rgba(96,44,166,.45); --blob3:rgba(10,110,110,.4);
     --grid:rgba(143,163,186,.16); --navbg:rgba(13,22,38,.92);
   }
   [data-theme="light"]{
-    --bg:#edf2f8; --bg2:rgba(255,255,255,.88); --card:#ffffff;
+    --bg:#eef3f9; --bg2:#ffffff; --card:#ffffff;
     --text:#0e1c2e; --hint:#617891; --link:#1b86d1;
     --border:rgba(14,42,74,.1); --input:#ffffff;
     --shadow:0 8px 24px rgba(31,68,120,.13);
@@ -39,11 +39,11 @@
   .dot{position:absolute; width:5px; height:5px; border-radius:50%; background:var(--link); opacity:.35; animation:floaty 9s ease-in-out infinite;}
   @keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-26px);}}
   header{padding:16px 16px 10px; position:relative;}
-  header::after{content:""; position:absolute; inset:0; background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.09) 50%,transparent 60%); transform:translateX(-120%); animation:sweep 4.5s ease infinite; pointer-events:none;}
+  header::after{content:none;}
   @keyframes sweep{0%,55%{transform:translateX(-120%);}90%,100%{transform:translateX(120%);}}
   .headrow{display:flex; align-items:center; gap:8px;}
   header h1{margin:0; font-size:22px; flex:1;}
-  .gradtext{background:linear-gradient(90deg,#2aabee,#7d5cff,#16c784,#2aabee); background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:gradMove 5s linear infinite;}
+  .gradtext{color:var(--text);}
   @keyframes gradMove{from{background-position:0% 0;}to{background-position:220% 0;}}
   header p{margin:3px 0 0; color:var(--hint); font-size:12px;}
   .themebtn{border:1px solid var(--border); background:var(--bg2); color:var(--text); width:38px; height:38px; border-radius:12px; font-size:17px; cursor:pointer; backdrop-filter:blur(8px);}
@@ -129,17 +129,13 @@
   .navitem.center .nico{width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#2aabee,#7d5cff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:23px; box-shadow:0 8px 22px rgba(64,120,255,.5); border:3px solid var(--bg);}
   .navitem.center{color:var(--hint);}
   .navitem.center.active{color:var(--link);}
+  /* Latar bersih & rata (v3.1) — tanpa aurora/kaca */
+  .card,.stat,.chartwrap,.iconbtn,.chipbtn,.themebtn,.bottomnav{backdrop-filter:none; -webkit-backdrop-filter:none;}
+  header{background:radial-gradient(640px 220px at 50% -90px, rgba(42,171,238,.12), rgba(42,171,238,0) 70%);}
+  .bgfx{display:none;}
 </style>
 </head>
 <body>
-<div class="bgfx">
-  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-  <span class="dot" style="top:18%; left:12%; animation-delay:0s;"></span>
-  <span class="dot" style="top:30%; left:84%; animation-delay:1.4s;"></span>
-  <span class="dot" style="top:58%; left:8%; animation-delay:2.6s;"></span>
-  <span class="dot" style="top:70%; left:90%; animation-delay:.8s;"></span>
-  <span class="dot" style="top:44%; left:55%; animation-delay:3.4s;"></span>
-</div>
 <header>
   <div class="headrow">
     <h1>📈 <span class="gradtext">ChartKu</span><span class="livedot"></span></h1>
@@ -564,6 +560,41 @@ function loadGt(cat, silent) {
     if (currentCat === cat && !$('search').value.trim()) renderGtList(d, cat === 'trending');
   }).catch(function (e) { if (!silent && currentCat === cat) listError(e); });
 }
+/* ----- Trending: GeckoTerminal + DexScreener boosts ----- */
+function loadTrending(silent) {
+  if (!silent) $('coinList').innerHTML = skels();
+  fetchJson(GT + '/networks/trending_pools?page=1&include=base_token').then(function (d) {
+    catCache.trending = { at: Date.now(), raw: d };
+    if (currentCat !== 'trending' || $('search').value.trim()) return null;
+    renderGtList(d, true);
+    return fetchJson(DS + '/token-boosts/top/v1');
+  }).then(function (list) {
+    if (!list || currentCat !== 'trending' || $('search').value.trim()) return;
+    var toks = (list || []).slice(0, 10);
+    var jobs = toks.map(function (t) {
+      return fetchJson(DS + '/latest/dex/tokens/' + t.tokenAddress).then(function (dd) {
+        var pairs = (dd && dd.pairs) || [];
+        if (!pairs.length) return null;
+        return pairs.slice().sort(function (x, y) { return ((y.liquidity || {}).usd || 0) - ((x.liquidity || {}).usd || 0); })[0];
+      }).catch(function () { return null; });
+    });
+    return Promise.all(jobs).then(function (pairs) {
+      if (currentCat !== 'trending' || $('search').value.trim()) return;
+      var html = '';
+      (pairs || []).filter(Boolean).forEach(function (p, i) {
+        var chg = parseFloat((p.priceChange || {}).h24 || 0);
+        var gtNet = dsToGtNet(p.chainId);
+        html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + (i * 25) + 'ms">'
+          + '<img class="coinicon" loading="lazy" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
+          + '<div><div class="sym">⚡ ' + esc(p.baseToken.symbol) + '<span class="netbadge">DEXSCREENER</span></div>'
+          + '<div class="nm">' + esc(p.baseToken.name) + ' · Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
+          + '<div class="right"><div class="price">$' + fmtPrice(p.priceUsd) + '</div>'
+          + '<div class="chg ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + Math.abs(chg).toFixed(2) + '%</div></div></div>';
+      });
+      if (html) $('coinList').innerHTML += '<div class="loading" style="padding:10px 4px 2px;">Sedang diboost di DexScreener:</div>' + html;
+    });
+  }).catch(function (e) { if (!silent && currentCat === 'trending') listError(e); });
+}
 /* ----- Pump.fun via DexScreener ----- */
 function loadPump(silent) {
   if (!silent) $('coinList').innerHTML = skels();
@@ -604,6 +635,7 @@ function loadPump(silent) {
 function loadCat(cat, silent) {
   $('listNote').textContent = CAT_NOTES[cat] || '';
   if (cat === 'all' || cat === 'meme') loadCg(cat, silent);
+  else if (cat === 'trending') loadTrending(silent);
   else if (cat === 'pump') loadPump(silent);
   else loadGt(cat, silent);
 }
@@ -653,7 +685,8 @@ $('search').addEventListener('input', function () {
 function remoteSearch(q) {
   var cgP = fetchJson(CG + '/search?query=' + encodeURIComponent(q)).catch(function () { return null; });
   var gtP = fetchJson(GT + '/search/pools?query=' + encodeURIComponent(q) + '&include=base_token').catch(function () { return null; });
-  Promise.all([cgP, gtP]).then(function (res) {
+  var dsP = fetchJson(DS + '/latest/dex/search?q=' + encodeURIComponent(q)).catch(function () { return null; });
+  Promise.all([cgP, gtP, dsP]).then(function (res) {
     if ($('search').value.trim().toLowerCase() !== q.toLowerCase()) return;
     var html = '';
     var cgD = res[0], gtD = res[1];
@@ -675,7 +708,21 @@ function remoteSearch(q) {
       html += '<div class="loading" style="padding:8px 4px;">Pool DEX (GeckoTerminal):</div>';
       pools.forEach(function (p, i) { html += gtRowHtml(p, incMap, i, false); });
     }
-    $('coinList').innerHTML = html || '<div class="loading">Token tidak ditemukan di CoinGecko maupun GeckoTerminal.</div>';
+    var dsPairs = (res[2] && res[2].pairs) ? res[2].pairs.slice(0, 12) : [];
+    if (dsPairs.length) {
+      html += '<div class="loading" style="padding:8px 4px;">Pasangan DEX (DexScreener):</div>';
+      dsPairs.forEach(function (p, i) {
+        var chg = parseFloat((p.priceChange || {}).h24 || 0);
+        var gtNet = dsToGtNet(p.chainId);
+        html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + Math.min(i, 10) * 25 + 'ms">'
+          + '<img class="coinicon" loading="lazy" src="' + esc((p.info || {}).imageUrl || '') + '" alt="">'
+          + '<div><div class="sym">' + esc(p.baseToken.symbol) + '<span class="netbadge">' + esc(netLabel(gtNet || p.chainId)) + '</span></div>'
+          + '<div class="nm">' + esc(p.baseToken.name) + ' · ' + esc(p.dexId) + '</div></div>'
+          + '<div class="right"><div class="price">$' + fmtPrice(p.priceUsd) + '</div>'
+          + '<div class="chg ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + Math.abs(chg).toFixed(2) + '%</div></div></div>';
+      });
+    }
+    $('coinList').innerHTML = html || '<div class="loading">Token tidak ditemukan di CoinGecko, GeckoTerminal, maupun DexScreener.</div>';
   });
 }
 </script>
