@@ -2390,10 +2390,6 @@ ensureAddOpt('tonFrom'); ensureAddOpt('tonTo'); ensureAddOpt('solFrom'); ensureA
 $('tokenSheetBg').addEventListener('click', closeTokenPicker);
 $('tpQuery').addEventListener('input', function () { if (tpTimer) clearTimeout(tpTimer); var v = this.value; tpTimer = setTimeout(function () { tpSearch(v); }, 350); });
 $('tpResults').addEventListener('click', function (e) { var r = e.target.closest('.tprow'); if (r) tpPick(r.dataset.addr, r.dataset.sym); });
-</script>
-</body>
-</html>
-
 /* ================= FUTURES — simulasi, harga live Binance ================= */
 var FUT_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'LTCUSDT', 'NEARUSDT'];
 var fut = { pair: 'BTCUSDT', lev: 10, price: 0, rows: [], timer: null, prices: {} };
@@ -2579,6 +2575,10 @@ $('fReset').addEventListener('click', function () {
 });
 var futOpenBtnEl = $('futOpenBtn');
 if (futOpenBtnEl) futOpenBtnEl.addEventListener('click', function () { haptic(); window.futOpen('BTCUSDT'); });
+</script>
+</body>
+</html>
+
 <script type="module">
 /* Swap TON di dalam KoinKu: transaksi dibangun dengan SDK resmi STON.fi,
    lalu ditandatangani lewat TonConnect — pengguna tidak pindah aplikasi. */
