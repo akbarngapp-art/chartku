@@ -19,32 +19,50 @@
     --green:#16c784; --red:#ea3943;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text);}
-  header{padding:14px 16px 8px;}
-  header h1{margin:0; font-size:20px;}
-  header p{margin:2px 0 0; color:var(--hint); font-size:12px;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden;}
+  header{padding:16px 16px 12px; background:linear-gradient(120deg,#0b1526,#123152,#1a0f2e,#0b1526); background-size:300% 300%; animation:gradShift 9s ease infinite;}
+  header h1{margin:0; font-size:21px;}
+  header p{margin:3px 0 0; color:#a9c3de; font-size:12px;}
+  @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+  .livedot{display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--green); margin-right:6px; animation:pulse 1.6s ease-out infinite; vertical-align:middle;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(22,199,132,.55);}70%{box-shadow:0 0 0 9px rgba(22,199,132,0);}100%{box-shadow:0 0 0 0 rgba(22,199,132,0);}}
+  .marquee{overflow:hidden; white-space:nowrap; padding:8px 0 2px; -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+  .marquee-inner{display:inline-block; white-space:nowrap; animation:marquee 32s linear infinite; font-size:12px; color:#cfe3f7;}
+  .marquee-inner b{color:#fff;}
+  @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
   .tabs{display:flex; gap:8px; padding:10px 16px;}
-  .tab{flex:1; padding:10px; border:none; border-radius:10px; background:var(--bg2); color:var(--hint); font-size:15px; font-weight:600; cursor:pointer;}
+  .tab{flex:1; padding:10px; border:none; border-radius:10px; background:var(--bg2); color:var(--hint); font-size:15px; font-weight:600; cursor:pointer; transition:transform .12s ease, background .2s ease;}
+  .tab:active{transform:scale(.96);}
   .tab.active{background:var(--btn); color:var(--btntext);}
   .view{display:none; padding:0 16px 24px;}
-  .view.active{display:block;}
+  .view.active{display:block; animation:fadeIn .28s ease both;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
   .searchrow{display:flex; gap:8px; margin-bottom:10px;}
   .searchrow input{flex:1; padding:11px 12px; border-radius:10px; border:1px solid rgba(127,145,164,.35); background:var(--bg2); color:var(--text); font-size:14px; outline:none;}
   .iconbtn{padding:0 14px; border:none; border-radius:10px; background:var(--bg2); color:var(--text); font-size:16px; cursor:pointer;}
-  .coinrow{display:flex; align-items:center; padding:11px 10px; border-bottom:1px solid rgba(127,145,164,.15); cursor:pointer;}
+  .coinrow{display:flex; align-items:center; gap:10px; padding:11px 10px; border-bottom:1px solid rgba(127,145,164,.15); cursor:pointer; animation:slideIn .35s ease both;}
   .coinrow:active{background:var(--bg2);}
+  @keyframes slideIn{from{opacity:0; transform:translateX(14px);}to{opacity:1; transform:translateX(0);}}
+  .coinicon{width:30px; height:30px; border-radius:50%; background:var(--bg2); flex:none;}
   .coinrow .sym{font-weight:700; font-size:15px;}
-  .coinrow .vol{color:var(--hint); font-size:11px;}
-  .coinrow .right{margin-left:auto; text-align:right;}
-  .coinrow .price{font-weight:600; font-size:14px;}
+  .coinrow .nm{color:var(--hint); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;}
+  .coinrow .right{margin-left:auto; text-align:right; flex:none;}
+  .coinrow .price{font-weight:600; font-size:14px; padding:1px 5px; border-radius:6px;}
+  .spark{width:64px; height:24px; flex:none;}
   .chg{font-size:12px; font-weight:700;}
   .up{color:var(--green);} .down{color:var(--red);}
+  .flashup{animation:flashUp .9s ease;}
+  .flashdown{animation:flashDown .9s ease;}
+  @keyframes flashUp{0%{background:rgba(22,199,132,.35);}100%{background:transparent;}}
+  @keyframes flashDown{0%{background:rgba(234,57,67,.35);}100%{background:transparent;}}
+  .skel{height:52px; border-radius:10px; margin-bottom:8px; background:linear-gradient(90deg,var(--bg2) 25%,rgba(127,145,164,.25) 50%,var(--bg2) 75%); background-size:200% 100%; animation:shimmer 1.2s linear infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
   .backbtn{background:none; border:none; color:var(--link); font-size:15px; padding:6px 0; cursor:pointer;}
-  .bigprice{font-size:26px; font-weight:800; margin:2px 0;}
+  .bigprice{font-size:27px; font-weight:800; margin:2px 0;}
   .seg{display:flex; gap:6px; margin:12px 0;}
   .seg button{flex:1; padding:8px 0; border-radius:8px; border:1px solid rgba(127,145,164,.35); background:transparent; color:var(--hint); font-weight:700; cursor:pointer;}
   .seg button.active{background:var(--btn); color:var(--btntext); border-color:var(--btn);}
-  canvas{width:100%; display:block; background:var(--bg2); border-radius:12px;}
+  canvas.chartcv{width:100%; display:block; background:var(--bg2); border-radius:12px;}
   .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;}
   .stat{background:var(--bg2); border-radius:10px; padding:10px 12px;}
   .stat .k{color:var(--hint); font-size:11px;}
@@ -57,7 +75,8 @@
   .fliprow{display:flex; gap:8px; align-items:flex-end;}
   .fliprow .col{flex:1;}
   .flipbtn{padding:11px 13px; border:none; border-radius:10px; background:var(--bg); color:var(--text); cursor:pointer; font-size:15px;}
-  .mainbtn{width:100%; padding:13px; margin-top:12px; border:none; border-radius:10px; background:var(--btn); color:var(--btntext); font-size:15px; font-weight:700; cursor:pointer;}
+  .mainbtn{width:100%; padding:13px; margin-top:12px; border:none; border-radius:10px; background:var(--btn); color:var(--btntext); font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease;}
+  .mainbtn:active{transform:scale(.98);}
   .mainbtn:disabled{opacity:.45;}
   .ghostbtn{width:100%; padding:12px; margin-top:10px; border:1px solid rgba(127,145,164,.4); border-radius:10px; background:transparent; color:var(--text); font-size:14px; font-weight:600; cursor:pointer;}
   .quote{background:var(--bg); border-radius:10px; padding:10px 12px; margin-top:10px; font-size:13px; line-height:1.55; display:none;}
@@ -66,48 +85,64 @@
   #toast{position:fixed; left:16px; right:16px; bottom:18px; background:#1c2b3a; color:#fff; border:1px solid rgba(127,145,164,.4); padding:12px 14px; border-radius:12px; font-size:13px; display:none; z-index:99; box-shadow:0 6px 24px rgba(0,0,0,.4);}
   .muted{color:var(--hint); font-size:12px;}
   .loading{color:var(--hint); padding:18px 4px; font-size:13px;}
+  .hero{text-align:center; padding:22px 16px;}
+  .hero .big{font-size:19px; font-weight:800; margin:8px 0 4px;}
+  .chips{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:10px 0 2px;}
+  .chip{background:var(--bg); border:1px solid rgba(127,145,164,.35); color:var(--hint); font-size:11px; padding:5px 9px; border-radius:999px;}
+  .rules{text-align:left; font-size:13px; line-height:1.7; color:var(--text);}
 </style>
 </head>
 <body>
 <header>
-  <h1>📈 ChartKu</h1>
-  <p>Chart semua koin (Binance) + swap — tanda tangan selalu di wallet-mu sendiri.</p>
+  <h1>📈 ChartKu <span class="livedot"></span></h1>
+  <p>Chart semua token (CoinGecko) + swap + live chat — tanda tangan selalu di wallet-mu sendiri.</p>
+  <div class="marquee"><div class="marquee-inner" id="marqueeInner">Memuat harga…</div></div>
 </header>
 
 <div class="tabs">
   <button class="tab active" id="tabChart">Chart</button>
   <button class="tab" id="tabSwap">Swap</button>
+  <button class="tab" id="tabChat">Chat</button>
 </div>
 
 <!-- ============ CHART LIST ============ -->
 <section class="view active" id="viewList">
   <div class="searchrow">
-    <input type="text" id="search" placeholder="Cari koin… mis. BTC, SOL, PEPE">
+    <input type="text" id="search" placeholder="Cari token apa pun… mis. PEPE, XRP, WIF">
     <button class="iconbtn" id="refreshList">⟳</button>
   </div>
-  <div id="coinList"><div class="loading">Memuat daftar koin…</div></div>
+  <div id="coinList"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+  <p class="muted">250 token teratas menurut kapitalisasi pasar · harga diperbarui otomatis tiap menit · ketuk koin untuk grafiknya.</p>
 </section>
 
 <!-- ============ CHART DETAIL ============ -->
 <section class="view" id="viewDetail">
   <button class="backbtn" id="backBtn">‹ Kembali</button>
-  <div class="sym" id="dSym" style="font-size:17px; font-weight:800;">-</div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <img class="coinicon" id="dIcon" alt="" style="width:34px; height:34px;">
+    <div>
+      <div id="dSym" style="font-size:17px; font-weight:800;">-</div>
+      <div class="muted" id="dName">-</div>
+    </div>
+  </div>
   <div class="bigprice" id="dPrice">-</div>
   <div class="chg" id="dChg">-</div>
-  <div class="seg" id="segIntervals">
-    <button data-iv="15m">15m</button>
-    <button data-iv="1h" class="active">1j</button>
-    <button data-iv="4h">4j</button>
-    <button data-iv="1d">1H</button>
+  <div class="seg" id="segRanges">
+    <button data-days="1" class="active">24J</button>
+    <button data-days="7">7H</button>
+    <button data-days="30">30H</button>
+    <button data-days="90">90H</button>
   </div>
-  <canvas id="chart" height="260"></canvas>
+  <canvas id="chart" class="chartcv" height="260"></canvas>
   <div class="stats">
     <div class="stat"><div class="k">Tertinggi 24j</div><div class="v" id="dHigh">-</div></div>
     <div class="stat"><div class="k">Terendah 24j</div><div class="v" id="dLow">-</div></div>
-    <div class="stat"><div class="k">Volume 24j (USDT)</div><div class="v" id="dVol">-</div></div>
+    <div class="stat"><div class="k">Kapitalisasi Pasar</div><div class="v" id="dMcap">-</div></div>
+    <div class="stat"><div class="k">Volume 24j</div><div class="v" id="dVol">-</div></div>
+    <div class="stat"><div class="k">Tertinggi Sepanjang Masa</div><div class="v" id="dAth">-</div></div>
     <div class="stat"><div class="k">Perubahan 24j</div><div class="v" id="dChg2">-</div></div>
   </div>
-  <p class="muted">Grafik diperbarui otomatis tiap 15 detik selama halaman ini terbuka.</p>
+  <p class="muted">Data: CoinGecko · halaman ini diperbarui otomatis selama terbuka.</p>
 </section>
 
 <!-- ============ SWAP ============ -->
@@ -183,12 +218,38 @@
   <p class="muted">Kurs & rute: STON.fi (TON), Jupiter (Solana), LI.FI (EVM). Aplikasi ini tidak pernah meminta seed phrase atau private key — semua transaksi ditandatangani di wallet-mu.</p>
 </section>
 
+<!-- ============ LIVE CHAT ============ -->
+<section class="view" id="viewChat">
+  <div class="card hero">
+    <div><span class="livedot"></span><span class="muted" style="font-size:12px;">SEDANG LIVE</span></div>
+    <div class="big">💬 Live Chat & Sinyal ChartKu</div>
+    <p class="sub" style="margin-bottom:4px;">Ngobrol langsung dengan sesama trader: bahas chart, berbagi sinyal, dan tanya jawab — semuanya di grup Telegram resmi ChartKu.</p>
+    <div class="chips">
+      <span class="chip">Grup publik Telegram</span>
+      <span class="chip">Bot ChartKu di dalam grup</span>
+      <span class="chip">Gratis</span>
+    </div>
+    <button class="mainbtn" id="chatJoinBtn">💬 Masuk Live Chat</button>
+    <button class="ghostbtn" id="chatBotBtn">🤖 Buka Bot ChartKu</button>
+  </div>
+  <div class="card">
+    <h3>Aturan singkat</h3>
+    <div class="rules">
+      • Sopan, jangan spam atau promosi berlebihan.<br>
+      • Sinyal bukan nasihat keuangan — selalu riset sendiri (DYOR).<br>
+      • Admin tidak pernah meminta seed phrase atau private key. Siapa pun yang meminta itu = penipu.
+    </div>
+  </div>
+</section>
+
 <div id="toast"></div>
 <script>
 'use strict';
 var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
-var BINANCE = 'https://data-api.binance.vision';
+var CG = 'https://api.coingecko.com/api/v3';
+var GROUP_LINK = 'https://t.me/chartku_live';
+var BOT_LINK = 'https://t.me/chartku_app_bot';
 var $ = function (id) { return document.getElementById(id); };
 
 function toast(msg, ms) {
@@ -197,17 +258,21 @@ function toast(msg, ms) {
 }
 function haptic() { if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {} } }
 function openExt(url) { if (tg && tg.openLink) { tg.openLink(url); } else { window.open(url, '_blank'); } }
+function openTg(url) { if (tg && tg.openTelegramLink) { tg.openTelegramLink(url); } else { openExt(url); } }
 function fmtPrice(p) {
   p = parseFloat(p);
   if (!isFinite(p)) return '-';
+  if (p === 0) return '0';
   if (p >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (p >= 1) return p.toFixed(4).replace(/0+$/, '').replace(/\.$/, '.00');
   if (p >= 0.01) return p.toFixed(5);
-  return p.toFixed(8).replace(/0+$/, '');
+  if (p >= 0.0001) return p.toFixed(7).replace(/0+$/, '');
+  return p.toPrecision(3);
 }
 function fmtBig(n) {
   n = parseFloat(n);
   if (!isFinite(n)) return '-';
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + ' T';
   if (n >= 1e9) return (n / 1e9).toFixed(2) + ' M';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + ' jt';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + ' rb';
@@ -239,108 +304,232 @@ function fromUnits(unitsStr, decimals) {
 }
 function shortAddr(a) { if (!a) return ''; return a.length > 14 ? a.slice(0, 6) + '…' + a.slice(-4) : a; }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+function cgFetch(url) {
+  return fetch(url).then(function (r) {
+    if (r.status === 429) throw new Error('ratelimit');
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  });
+}
 
 /* ---------- Tabs ---------- */
+var currentCoin = null;
 function showView(name) {
   $('tabChart').classList.toggle('active', name === 'chart');
   $('tabSwap').classList.toggle('active', name === 'swap');
-  $('viewList').classList.toggle('active', name === 'chart' && !currentSymbol);
-  $('viewDetail').classList.toggle('active', name === 'chart' && !!currentSymbol);
+  $('tabChat').classList.toggle('active', name === 'chat');
+  $('viewList').classList.toggle('active', name === 'chart' && !currentCoin);
+  $('viewDetail').classList.toggle('active', name === 'chart' && !!currentCoin);
   $('viewSwap').classList.toggle('active', name === 'swap');
+  $('viewChat').classList.toggle('active', name === 'chat');
   if (tg && tg.BackButton) {
-    if (name === 'chart' && currentSymbol) { tg.BackButton.show(); } else { tg.BackButton.hide(); }
+    if (name === 'chart' && currentCoin) { tg.BackButton.show(); } else { tg.BackButton.hide(); }
   }
 }
 $('tabChart').addEventListener('click', function () { haptic(); showView('chart'); });
 $('tabSwap').addEventListener('click', function () { haptic(); showView('swap'); });
+$('tabChat').addEventListener('click', function () { haptic(); showView('chat'); });
 if (tg && tg.BackButton) { tg.BackButton.onClick(function () { closeDetail(); }); }
+$('chatJoinBtn').addEventListener('click', function () { haptic(); openTg(GROUP_LINK); });
+$('chatBotBtn').addEventListener('click', function () { haptic(); openTg(BOT_LINK); });
 
-/* ---------- Chart list ---------- */
+/* ---------- Coin list (CoinGecko markets) ---------- */
 var allCoins = [];
-function isLeveraged(sym) {
-  var base = sym.replace(/USDT$/, '');
-  return /(UP|DOWN|BULL|BEAR)$/.test(base);
+var prevPrices = {};
+var listTimer = null;
+
+function loadList(silent) {
+  if (!silent) {
+    $('coinList').innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  }
+  cgFetch(CG + '/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true&price_change_percentage=24h')
+    .then(function (data) {
+      if (!data || !data.length) throw new Error('empty');
+      allCoins = data;
+      buildMarquee();
+      renderList($('search').value);
+    }).catch(function (e) {
+      if (!silent) {
+        $('coinList').innerHTML = '<div class="loading">' + (e.message === 'ratelimit' ? 'Server data sedang sibuk (batas CoinGecko). Tunggu sebentar lalu ketuk ⟳.' : 'Gagal memuat data. Periksa koneksi lalu ketuk ⟳.') + '</div>';
+      }
+    });
 }
-function loadList() {
-  $('coinList').innerHTML = '<div class="loading">Memuat daftar koin…</div>';
-  fetch(BINANCE + '/api/v3/ticker/24hr').then(function (r) { return r.json(); }).then(function (data) {
-    allCoins = data.filter(function (d) {
-      return /USDT$/.test(d.symbol) && !isLeveraged(d.symbol) && parseFloat(d.quoteVolume) > 0;
-    }).sort(function (a, b) { return parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume); }).slice(0, 150);
-    renderList($('search').value);
-  }).catch(function () {
-    $('coinList').innerHTML = '<div class="loading">Gagal memuat data. Periksa koneksi lalu ketuk ⟳.</div>';
+function buildMarquee() {
+  var items = allCoins.slice(0, 12).map(function (c) {
+    var chg = parseFloat(c.price_change_percentage_24h || 0);
+    return '<b>' + esc(c.symbol.toUpperCase()) + '</b> $' + fmtPrice(c.current_price) + ' <span style="color:' + (chg >= 0 ? '#16c784' : '#ea3943') + '">' + (chg >= 0 ? '▲' : '▼') + Math.abs(chg).toFixed(2) + '%</span>';
+  }).join(' &nbsp;·&nbsp; ');
+  $('marqueeInner').innerHTML = items + ' &nbsp;·&nbsp; ' + items + ' &nbsp;·&nbsp; ';
+}
+function drawSpark(cv, prices, up) {
+  if (!cv || !prices || prices.length < 2) return;
+  var dpr = window.devicePixelRatio || 1;
+  var w = 64, h = 24;
+  cv.width = w * dpr; cv.height = h * dpr;
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var step = Math.max(1, Math.floor(prices.length / 28));
+  var pts = [];
+  for (var i = 0; i < prices.length; i += step) pts.push(prices[i]);
+  pts.push(prices[prices.length - 1]);
+  var hi = Math.max.apply(null, pts), lo = Math.min.apply(null, pts);
+  var span = (hi - lo) || 1;
+  ctx.beginPath();
+  pts.forEach(function (p, idx) {
+    var x = idx / (pts.length - 1) * (w - 2) + 1;
+    var y = 2 + (hi - p) / span * (h - 4);
+    if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = up ? '#16c784' : '#ea3943';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.lineTo(w - 1, h); ctx.lineTo(1, h); ctx.closePath();
+  ctx.fillStyle = up ? 'rgba(22,199,132,.14)' : 'rgba(234,57,67,.14)';
+  ctx.fill();
+}
+function coinRowHtml(c, idx) {
+  var chg = parseFloat(c.price_change_percentage_24h || 0);
+  var prev = prevPrices[c.id];
+  var flash = '';
+  if (prev !== undefined && prev !== c.current_price) flash = c.current_price > prev ? ' flashup' : ' flashdown';
+  prevPrices[c.id] = c.current_price;
+  var delay = Math.min(idx, 14) * 25;
+  return '<div class="coinrow" data-id="' + esc(c.id) + '" style="animation-delay:' + delay + 'ms">'
+    + '<img class="coinicon" loading="lazy" src="' + esc(c.image || '') + '" alt="">'
+    + '<div><div class="sym">' + esc(c.symbol.toUpperCase()) + '</div><div class="nm">#' + (c.market_cap_rank || '-') + ' ' + esc(c.name) + '</div></div>'
+    + '<canvas class="spark" data-spark="' + esc(c.id) + '"></canvas>'
+    + '<div class="right"><div class="price' + flash + '">$' + fmtPrice(c.current_price) + '</div>'
+    + '<div class="chg ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + Math.abs(chg).toFixed(2) + '%</div></div></div>';
+}
+function paintSparks(rows) {
+  rows.forEach(function (c) {
+    var cv = document.querySelector('canvas[data-spark="' + c.id + '"]');
+    if (cv && c.sparkline_in_7d && c.sparkline_in_7d.price) {
+      drawSpark(cv, c.sparkline_in_7d.price, parseFloat(c.price_change_percentage_24h || 0) >= 0);
+    }
   });
 }
-function renderList(q) {
-  q = (q || '').trim().toUpperCase();
-  var rows = allCoins.filter(function (d) { return !q || d.symbol.indexOf(q) === 0 || d.symbol.replace('USDT', '').indexOf(q) !== -1; });
-  if (!rows.length) { $('coinList').innerHTML = '<div class="loading">Tidak ada koin cocok.</div>'; return; }
-  var html = '';
-  rows.forEach(function (d) {
-    var chg = parseFloat(d.priceChangePercent);
-    html += '<div class="coinrow" data-sym="' + d.symbol + '">'
-      + '<div><div class="sym">' + d.symbol.replace('USDT', '') + '<span class="vol"> /USDT</span></div>'
-      + '<div class="vol">Vol ' + fmtBig(d.quoteVolume) + '</div></div>'
-      + '<div class="right"><div class="price">$' + fmtPrice(d.lastPrice) + '</div>'
-      + '<div class="chg ' + (chg >= 0 ? 'up' : 'down') + '">' + (chg >= 0 ? '▲' : '▼') + ' ' + Math.abs(chg).toFixed(2) + '%</div></div></div>';
-  });
-  $('coinList').innerHTML = html;
+function bindRows() {
   var nodes = $('coinList').querySelectorAll('.coinrow');
   for (var i = 0; i < nodes.length; i++) {
-    nodes[i].addEventListener('click', function () { haptic(); openDetail(this.getAttribute('data-sym')); });
+    nodes[i].addEventListener('click', function () { haptic(); openDetail(this.getAttribute('data-id')); });
   }
 }
-$('search').addEventListener('input', function () { renderList(this.value); });
-$('refreshList').addEventListener('click', function () { haptic(); loadList(); });
+function renderList(q) {
+  q = (q || '').trim().toLowerCase();
+  var rows = allCoins.filter(function (c) {
+    return !q || c.symbol.toLowerCase().indexOf(q) !== -1 || c.name.toLowerCase().indexOf(q) !== -1;
+  });
+  if (!rows.length) { $('coinList').innerHTML = '<div class="loading">Tidak ketemu di 250 teratas — pencarian online berjalan otomatis…</div>'; return; }
+  var html = '';
+  rows.forEach(function (c, i) { html += coinRowHtml(c, i); });
+  $('coinList').innerHTML = html;
+  bindRows();
+  paintSparks(rows);
+}
+var searchTimer = null;
+$('search').addEventListener('input', function () {
+  var q = this.value.trim();
+  renderList(q);
+  clearTimeout(searchTimer);
+  if (q.length < 2) return;
+  searchTimer = setTimeout(function () { remoteSearch(q); }, 600);
+});
+function remoteSearch(q) {
+  cgFetch(CG + '/search?query=' + encodeURIComponent(q)).then(function (d) {
+    if ($('search').value.trim().toLowerCase() !== q.toLowerCase()) return;
+    var coins = (d && d.coins) ? d.coins.slice(0, 30) : [];
+    if (!coins.length) { $('coinList').innerHTML = '<div class="loading">Token tidak ditemukan di CoinGecko.</div>'; return; }
+    var html = '<div class="loading" style="padding:8px 4px;">Hasil pencarian CoinGecko — ketuk untuk grafik & harganya:</div>';
+    coins.forEach(function (c, i) {
+      var known = null;
+      for (var j = 0; j < allCoins.length; j++) { if (allCoins[j].id === c.id) { known = allCoins[j]; break; } }
+      var delay = Math.min(i, 14) * 25;
+      html += '<div class="coinrow" data-id="' + esc(c.id) + '" style="animation-delay:' + delay + 'ms">'
+        + '<img class="coinicon" loading="lazy" src="' + esc(c.large || c.thumb || '') + '" alt="">'
+        + '<div><div class="sym">' + esc((c.symbol || '').toUpperCase()) + '</div><div class="nm">#' + (c.market_cap_rank || '-') + ' ' + esc(c.name) + '</div></div>'
+        + '<div class="right"><div class="price">' + (known ? '$' + fmtPrice(known.current_price) : 'Lihat ›') + '</div></div></div>';
+    });
+    $('coinList').innerHTML = html;
+    bindRows();
+  }).catch(function () {});
+}
+$('refreshList').addEventListener('click', function () { haptic(); loadList(false); });
 
-/* ---------- Chart detail ---------- */
-var currentSymbol = null;
-var currentInterval = '1h';
+/* ---------- Chart detail (CoinGecko OHLC) ---------- */
+var currentDays = '1';
 var detailTimer = null;
+var chartRows = [];
+var chartAnim = null;
 
-function openDetail(sym) {
-  currentSymbol = sym;
+function openDetail(id) {
+  currentCoin = id;
+  currentDays = '1';
+  var btns = $('segRanges').querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-days') === '1');
   showView('chart');
-  loadDetail();
+  loadDetail(true);
   clearInterval(detailTimer);
-  detailTimer = setInterval(loadDetail, 15000);
+  detailTimer = setInterval(function () { loadDetail(false); }, 45000);
 }
 function closeDetail() {
-  currentSymbol = null;
+  currentCoin = null;
   clearInterval(detailTimer);
+  if (chartAnim) cancelAnimationFrame(chartAnim);
   showView('chart');
 }
 $('backBtn').addEventListener('click', closeDetail);
-$('segIntervals').addEventListener('click', function (e) {
+$('segRanges').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
-  currentInterval = b.getAttribute('data-iv');
+  currentDays = b.getAttribute('data-days');
   var btns = this.querySelectorAll('button');
   for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i] === b);
-  haptic(); loadDetail();
+  haptic(); loadDetail(true);
 });
-function loadDetail() {
-  if (!currentSymbol) return;
-  var sym = currentSymbol;
-  fetch(BINANCE + '/api/v3/ticker/24hr?symbol=' + sym).then(function (r) { return r.json(); }).then(function (d) {
-    if (currentSymbol !== sym) return;
-    $('dSym').textContent = sym.replace('USDT', '') + ' / USDT';
-    $('dPrice').textContent = '$' + fmtPrice(d.lastPrice);
-    var chg = parseFloat(d.priceChangePercent);
-    var txt = (chg >= 0 ? '▲ +' : '▼ ') + chg.toFixed(2) + '% (24j)';
-    $('dChg').textContent = txt;
-    $('dChg').className = 'chg ' + (chg >= 0 ? 'up' : 'down');
-    $('dHigh').textContent = '$' + fmtPrice(d.highPrice);
-    $('dLow').textContent = '$' + fmtPrice(d.lowPrice);
-    $('dVol').textContent = fmtBig(d.quoteVolume);
-    $('dChg2').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
-  }).catch(function () {});
-  fetch(BINANCE + '/api/v3/klines?symbol=' + sym + '&interval=' + currentInterval + '&limit=120')
-    .then(function (r) { return r.json(); })
-    .then(function (rows) { if (currentSymbol === sym && rows && rows.length) drawChart(rows); })
-    .catch(function () {});
+function loadDetail(animate) {
+  if (!currentCoin) return;
+  var id = currentCoin;
+  cgFetch(CG + '/coins/markets?vs_currency=usd&ids=' + encodeURIComponent(id) + '&sparkline=false&price_change_percentage=24h')
+    .then(function (d) {
+      if (currentCoin !== id || !d || !d.length) return;
+      var c = d[0];
+      $('dIcon').src = c.image || '';
+      $('dSym').textContent = c.symbol.toUpperCase() + ' / USD';
+      $('dName').textContent = c.name + ' · Peringkat #' + (c.market_cap_rank || '-');
+      $('dPrice').textContent = '$' + fmtPrice(c.current_price);
+      var chg = parseFloat(c.price_change_percentage_24h || 0);
+      $('dChg').textContent = (chg >= 0 ? '▲ +' : '▼ ') + chg.toFixed(2) + '% (24j)';
+      $('dChg').className = 'chg ' + (chg >= 0 ? 'up' : 'down');
+      $('dHigh').textContent = '$' + fmtPrice(c.high_24h);
+      $('dLow').textContent = '$' + fmtPrice(c.low_24h);
+      $('dMcap').textContent = '$' + fmtBig(c.market_cap);
+      $('dVol').textContent = '$' + fmtBig(c.total_volume);
+      $('dAth').textContent = '$' + fmtPrice(c.ath);
+      $('dChg2').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    }).catch(function () {});
+  cgFetch(CG + '/coins/' + encodeURIComponent(id) + '/ohlc?vs_currency=usd&days=' + currentDays)
+    .then(function (rows) {
+      if (currentCoin !== id || !rows || !rows.length) return;
+      chartRows = rows;
+      if (animate) { animateChart(); } else { drawChart(1); }
+    }).catch(function (e) {
+      if (e.message === 'ratelimit') toast('Server data sibuk sebentar — grafik akan dicoba lagi otomatis.');
+    });
 }
-function drawChart(rows) {
+function animateChart() {
+  if (chartAnim) cancelAnimationFrame(chartAnim);
+  var start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min(1, (ts - start) / 650);
+    drawChart(p);
+    if (p < 1 && currentCoin) { chartAnim = requestAnimationFrame(step); }
+  }
+  chartAnim = requestAnimationFrame(step);
+}
+function drawChart(progress) {
+  var rows = chartRows;
+  if (!rows.length) return;
   var cv = $('chart');
   var dpr = window.devicePixelRatio || 1;
   var w = cv.clientWidth, h = 260;
@@ -351,7 +540,7 @@ function drawChart(rows) {
   var padR = 58, padT = 10, padB = 8;
   var plotW = w - padR, plotH = h - padT - padB;
   var hi = -Infinity, lo = Infinity;
-  rows.forEach(function (k) { hi = Math.max(hi, parseFloat(k[2])); lo = Math.min(lo, parseFloat(k[3])); });
+  rows.forEach(function (k) { hi = Math.max(hi, k[2]); lo = Math.min(lo, k[3]); });
   var span = (hi - lo) || 1; hi += span * 0.06; lo -= span * 0.06; span = hi - lo;
   function y(p) { return padT + (hi - p) / span * plotH; }
   ctx.strokeStyle = 'rgba(127,145,164,.18)'; ctx.fillStyle = 'rgba(127,145,164,.9)';
@@ -362,23 +551,34 @@ function drawChart(rows) {
     ctx.fillText(fmtPrice(p), plotW + 5, yy + 3);
   }
   var n = rows.length;
+  var shown = Math.max(1, Math.floor(n * progress));
   var cw = plotW / n;
   var bodyW = Math.max(1, Math.floor(cw * 0.65));
-  rows.forEach(function (k, idx) {
-    var o = parseFloat(k[1]), hh = parseFloat(k[2]), ll = parseFloat(k[3]), c = parseFloat(k[4]);
+  for (var idx = 0; idx < shown; idx++) {
+    var k = rows[idx];
+    var o = k[1], hh = k[2], ll = k[3], c = k[4];
     var x = idx * cw + cw / 2;
     ctx.strokeStyle = c >= o ? '#16c784' : '#ea3943';
     ctx.fillStyle = ctx.strokeStyle;
     ctx.beginPath(); ctx.moveTo(x, y(hh)); ctx.lineTo(x, y(ll)); ctx.stroke();
     var t = y(Math.max(o, c)), b = y(Math.min(o, c));
     ctx.fillRect(x - bodyW / 2, t, bodyW, Math.max(1, b - t));
-  });
-  var last = parseFloat(rows[n - 1][4]);
+  }
+  var lastK = rows[shown - 1];
+  var last = lastK[4];
   ctx.strokeStyle = 'rgba(106,178,242,.7)'; ctx.setLineDash([4, 4]);
   ctx.beginPath(); ctx.moveTo(0, y(last)); ctx.lineTo(plotW, y(last)); ctx.stroke();
   ctx.setLineDash([]);
+  if (progress < 1) {
+    var fx = (shown - 1) * cw + cw / 2;
+    ctx.beginPath(); ctx.arc(fx, y(last), 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#6ab2f2'; ctx.fill();
+    ctx.beginPath(); ctx.arc(fx, y(last), 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(106,178,242,.25)'; ctx.fill();
+  }
 }
-loadList();
+loadList(false);
+listTimer = setInterval(function () { if (!currentCoin) loadList(true); }, 60000);
 </script>
 <script>
 'use strict';
@@ -391,7 +591,7 @@ var tonUi = null, tonWalletAddr = '';
 try {
   if (typeof TON_CONNECT_UI !== 'undefined') {
     tonUi = new TON_CONNECT_UI.TonConnectUI({
-      manifestUrl: location.origin + '/tonconnect-manifest.json',
+      manifestUrl: location.origin + location.pathname.replace(/[^/]*$/, '') + 'tonconnect-manifest.json',
       buttonRootId: 'tonConnectBtn'
     });
     tonUi.onStatusChange(function (w) {
