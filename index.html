@@ -366,8 +366,8 @@
       </div>
       <div class="quotebox" id="tonQuote" style="display:none;"></div>
       <button class="mainbtn" id="tonQuoteBtn">Cek Kurs</button>
-      <button class="ghostbtn" id="tonSwapBtn">Swap di STON.fi ↗</button>
-      <p class="sub" style="margin-top:10px;">Kurs dari STON.fi — swap diselesaikan di STON.fi dengan pasangan terisi.</p>
+      <button class="mainbtn" id="tonSwapBtn">Swap Sekarang</button>
+      <p class="sub" style="margin-top:10px;">Kurs & rute dari STON.fi — swap diselesaikan di dalam KoinKu, kamu cukup tanda tangan di wallet-mu.</p>
     </div>
 
     <div class="netpanel" id="panel-sol" style="display:none;">
@@ -1889,7 +1889,32 @@ $('tonQuoteBtn').addEventListener('click', function () {
 $('tonSwapBtn').addEventListener('click', function () {
   var from = TON_TOKENS[$('tonFrom').value], to = TON_TOKENS[$('tonTo').value];
   haptic();
-  openExt('https://app.ston.fi/swap?ft=' + encodeURIComponent(from.addr) + '&tt=' + encodeURIComponent(to.addr));
+  if (!tonUi || !tonWalletAddr) { toast('Sambungkan wallet TON dulu (tombol di atas).'); return; }
+  var units = toUnits($('tonAmount').value, from.dec);
+  if (!units || units === '0') { toast('Isi jumlah dulu.'); return; }
+  if (typeof window.stonSwapInApp !== 'function') { toast('Modul swap belum siap — tunggu sebentar lalu coba lagi.'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = 'Menyiapkan swap di KoinKu…';
+  var TON_ZERO = 'EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c';
+  window.stonSwapInApp({
+    tonUi: tonUi,
+    walletAddress: tonWalletAddr,
+    offerAddress: from.addr === TON_ZERO ? 'ton' : from.addr,
+    askAddress: to.addr === TON_ZERO ? 'ton' : to.addr,
+    offerUnits: units,
+    offerIsTon: from.addr === TON_ZERO,
+    askIsTon: to.addr === TON_ZERO
+  }).then(function (out) {
+    var recv = fromUnits(out.sim.askUnits, to.dec);
+    var box = $('tonQuote');
+    box.style.display = 'block';
+    box.innerHTML = '✅ Swap terkirim dari KoinKu — kamu akan menerima ≈ <b>' + recv + ' ' + to.sym + '</b> begitu terkonfirmasi di jaringan TON.<br><span class="muted">Pantau dompetmu di <a href="https://tonviewer.io/' + tonWalletAddr + '" target="_blank" rel="noopener">Tonviewer</a>.</span>';
+    $('tonRecv').textContent = recv;
+    toast('Swap TON terkirim.');
+    btn.textContent = 'Swap Sekarang'; btn.disabled = false;
+  }).catch(function (e) {
+    toast('Swap batal/gagal: ' + String(e && e.message || e).slice(0, 140));
+    btn.textContent = 'Swap Sekarang'; btn.disabled = false;
+  });
 });
 
 /* ================= Solana — Jupiter ================= */
@@ -2327,3 +2352,53 @@ $('tpResults').addEventListener('click', function (e) { var r = e.target.closest
 </script>
 </body>
 </html>
+<script type="module">
+/* Swap TON di dalam KoinKu: transaksi dibangun dengan SDK resmi STON.fi,
+   lalu ditandatangani lewat TonConnect — pengguna tidak pindah aplikasi. */
+let stonMods = null;
+async function loadSton() {
+  if (stonMods) return stonMods;
+  const sdk = await import('https://esm.sh/@ston-fi/sdk@2.7.0');
+  const api = await import('https://esm.sh/@ston-fi/api@0.33.0');
+  stonMods = { Client: sdk.Client, dexFactory: sdk.dexFactory, StonApiClient: api.StonApiClient };
+  return stonMods;
+}
+window.stonSwapInApp = async function (opts) {
+  const mods = await loadSton();
+  const tonClient = new mods.Client({ endpoint: 'https://toncenter.com/api/v2/jsonRPC' });
+  const stonApi = new mods.StonApiClient();
+  const sim = await stonApi.simulateSwap({
+    offerAddress: opts.offerAddress,
+    askAddress: opts.askAddress,
+    offerUnits: opts.offerUnits,
+    slippageTolerance: '0.01'
+  });
+  if (!sim || !sim.router) throw new Error('Rute swap tidak ditemukan untuk pasangan ini.');
+  const contracts = mods.dexFactory(sim.router);
+  const router = tonClient.open(contracts.Router.create(sim.router.address));
+  const proxyTon = contracts.pTON.create(sim.router.ptonMasterAddress);
+  const common = {
+    userWalletAddress: opts.walletAddress,
+    offerAmount: sim.offerUnits,
+    minAskAmount: sim.minAskUnits
+  };
+  let params;
+  if (opts.offerIsTon) {
+    params = await router.getSwapTonToJettonTxParams({ ...common, askJettonAddress: sim.askAddress, proxyTon });
+  } else if (opts.askIsTon) {
+    params = await router.getSwapJettonToTonTxParams({ ...common, offerJettonAddress: sim.offerAddress, proxyTon });
+  } else {
+    params = await router.getSwapJettonToJettonTxParams({ ...common, offerJettonAddress: sim.offerAddress, askJettonAddress: sim.askAddress });
+  }
+  const result = await opts.tonUi.sendTransaction({
+    validUntil: Math.floor(Date.now() / 1000) + 300,
+    network: '-239',
+    messages: [{
+      address: params.to.toString(),
+      amount: params.value.toString(),
+      payload: params.body ? params.body.toBoc().toString('base64') : undefined
+    }]
+  });
+  return { result: result, sim: sim };
+};
+</script>
