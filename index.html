@@ -244,7 +244,7 @@
   .mainbtn:disabled{background:var(--bg2); color:var(--hint); box-shadow:none;}
   html,body{overflow-x:hidden;}
   body{overscroll-behavior-y:none;}
-  #chart{touch-action:pan-y; display:block; width:100%;}
+  #chart{touch-action:none; display:block; width:100%;}
   #tpQuery{width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:11px; background:var(--bg2); color:var(--text); font-size:14px; box-sizing:border-box; margin-bottom:6px;}
   .tprow{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--border); cursor:pointer;}
   .tprow img{width:30px; height:30px; border-radius:50%; flex:none; background:var(--bg2);}
@@ -1146,6 +1146,7 @@ function openDetail(D) {
   currentDetail = D;
   currentDays = '1m';
   chartRows = [];
+  resetChartView();
   anchorPrice = 0; lastLivePrice = 0; lastShownPrice = 0;
   D.onBinance = undefined;
   var btns = $('segRanges').querySelectorAll('button');
@@ -1268,6 +1269,7 @@ function gotoSwap(side) {
 $('segRanges').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
   currentDays = b.getAttribute('data-days');
+  resetChartView();
   var btns = this.querySelectorAll('button');
   for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i] === b);
   haptic();
@@ -1371,6 +1373,60 @@ function loadStats(first) {
       }).catch(function () {});
   }
 }
+/* ----- Zoom chart: cubit dua jari memperbesar lilin, seret menggeser ----- */
+(function initChartZoom() {
+  var cv = $('chart'); if (!cv) return;
+  var pointers = {};
+  var pinchD = 0, pinchCount = 0, dragX = 0, dragPan = 0;
+  function nPtr() { return Object.keys(pointers).length; }
+  function dist() {
+    var ks = Object.keys(pointers); if (ks.length < 2) return 0;
+    var a = pointers[ks[0]], b = pointers[ks[1]];
+    var dx = a.x - b.x, dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  function viewCount() { return chartView.count || chartRows.length; }
+  cv.addEventListener('pointerdown', function (e) {
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    if (nPtr() === 2) { pinchD = dist(); pinchCount = viewCount(); }
+    else { dragX = e.clientX; dragPan = chartView.pan; }
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!pointers[e.pointerId] || !chartRows.length) return;
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    if (nPtr() === 2 && pinchD > 0) {
+      var d = dist(); if (!d) return;
+      var total = chartRows.length;
+      var nc = Math.round(pinchCount * pinchD / d);
+      nc = Math.max(8, Math.min(total, nc));
+      chartView.count = nc >= total ? 0 : nc;
+      if (chartView.pan + viewCount() > total) chartView.pan = Math.max(0, total - viewCount());
+      drawChart(1);
+    } else if (nPtr() === 1) {
+      var plotW = Math.max(60, cv.clientWidth - 58);
+      var per = Math.max(4, plotW / Math.max(1, viewCount()));
+      var np = dragPan + Math.round((e.clientX - dragX) / per);
+      var maxPan = Math.max(0, chartRows.length - viewCount());
+      chartView.pan = Math.max(0, Math.min(maxPan, np));
+      drawChart(1);
+    }
+  });
+  function endP(e) { delete pointers[e.pointerId]; }
+  cv.addEventListener('pointerup', endP);
+  cv.addEventListener('pointercancel', endP);
+  cv.addEventListener('dblclick', function () { resetChartView(); drawChart(1); });
+  cv.addEventListener('wheel', function (e) {
+    if (!chartRows.length) return;
+    e.preventDefault();
+    var total = chartRows.length;
+    var nc = Math.round(viewCount() * (e.deltaY > 0 ? 1.15 : 0.87));
+    nc = Math.max(8, Math.min(total, nc));
+    chartView.count = nc >= total ? 0 : nc;
+    if (chartView.pan + viewCount() > total) chartView.pan = Math.max(0, total - viewCount());
+    drawChart(1);
+  }, { passive: false });
+})();
 var rszTimer = null;
 window.addEventListener('resize', function () {
   if (rszTimer) clearTimeout(rszTimer);
@@ -1483,7 +1539,7 @@ function actRow(side, price, qty, usd, date, maker, txUrl, sym) {
   return '<div class="actrow"><div class="actl1"><span class="side" style="color:var(--' + (side === 'buy' ? 'green' : 'red') + ');">' + (side === 'buy' ? 'BELI' : 'JUAL') + '</span>'
     + '<span>$' + fmtPrice(price) + '</span><span class="usd">$' + fmtBig(usd) + '</span></div>'
     + '<div class="actl2"><span>' + fmtQty(qty) + ' ' + esc(sym || '') + '</span>' + (maker ? '<span>' + shortAddr(maker) + '</span>' : '')
-    + '<span class="tm">' + tm + '</span>' + '</div></div>';
+    + '<span class="tm">' + tm + '</span>' + (txUrl ? '<a class="txlink" href="' + txUrl + '" target="_blank" rel="noopener">TX ↗</a>' : '') + '</div></div>';
 }
 function renderActivity(html, buys, sells, src) {
   $('actList').innerHTML = html || '<div class="loading">Belum ada aktivitas.</div>';
@@ -1643,8 +1699,13 @@ function animateChart() {
   }
   chartAnim = requestAnimationFrame(step);
 }
+var chartView = { count: 0, pan: 0 };
+function resetChartView() { chartView.count = 0; chartView.pan = 0; }
 function drawChart(progress) {
-  var rows = chartRows;
+  var total = chartRows.length;
+  var vc = chartView.count || total;
+  if (chartView.pan + vc > total) chartView.pan = Math.max(0, total - vc);
+  var rows = chartRows.slice(Math.max(0, total - chartView.pan - vc), total - chartView.pan);
   if (!rows.length) return;
   var cv = $('chart');
   if (!cv || !cv.clientWidth) return;
