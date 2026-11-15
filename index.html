@@ -210,6 +210,10 @@
   .chipbtn.active{background:#e7f5d2; color:#3f7d00; border-color:transparent;}
   [data-theme="dark"] .chipbtn.active{background:rgba(141,198,71,.16); color:#a9dc76;}
   .homecard{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:10px 12px 4px; margin:0 0 12px;}
+  .mktstrip{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 12px;}
+  .mktbox{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:9px 12px;}
+  .mktbox .k{font-size:10.5px; color:var(--hint); letter-spacing:.03em;}
+  .mktbox .v{font-size:15px; font-weight:700; margin-top:1px;}
   .homecard h3{margin:2px 0 4px; font-size:15px; display:flex; justify-content:space-between; align-items:center;}
   .homecard h3 .tag{font-size:11px; color:var(--hint); font-weight:600;}
   .minirow .nm2{font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:38vw;}
@@ -278,9 +282,9 @@
     <button class="chipbtn" data-cat="meme">😂 Meme</button>
     <button class="chipbtn" data-cat="bsc">🟡 BSC</button>
     <button class="chipbtn" data-cat="solana">🟣 Solana</button>
-    <button class="chipbtn" data-cat="pump">🚀 Pump.fun</button>
   </div>
   <div class="colhead"><span>Pasangan / Vol 24j</span><span class="c-price" id="colPrice">Harga ⇅</span><span class="c-chg" id="colChg">24j % ⇅</span></div>
+  <div id="mktStrip"></div>
   <div id="homeCards"></div>
   <div id="coinList"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   <p class="muted" id="listNote">250 token teratas menurut kapitalisasi pasar · diperbarui otomatis.</p>
@@ -479,7 +483,6 @@
       <button class="mbtn" data-mcat="meme">😂 Meme</button>
       <button class="mbtn" data-mcat="bsc">🟡 BSC</button>
       <button class="mbtn" data-mcat="solana">🟣 Solana</button>
-      <button class="mbtn" data-mcat="pump">🚀 Pump.fun</button>
       <button class="mbtn" data-mcat="fav">⭐ Favorit</button>
     </div>
   </div>
@@ -645,7 +648,6 @@ var CAT_NOTES = {
   meme: 'Koin meme teratas (CoinGecko) · ketuk untuk grafiknya.',
   bsc: 'Pool teratas di BNB Chain / BSC (GeckoTerminal) · ketuk untuk grafik pool-nya.',
   solana: 'Pool teratas di Solana (GeckoTerminal) · ketuk untuk grafik pool-nya.',
-  pump: 'Koin Pump.fun & meme Solana yang sedang diboost (DexScreener) · ketuk untuk grafiknya.',
   new: 'Pool yang baru dibuat di BSC & Solana (GeckoTerminal) — risiko tinggi, cek likuiditasnya dulu.',
   gain: 'Pool dengan kenaikan harga 24 jam tertinggi (GeckoTerminal).',
   fav: 'Token favoritmu — tersimpan di perangkat ini. Ketuk ☆ pada halaman grafik untuk menambah.'
@@ -757,6 +759,7 @@ function loadCg(cat, silent) {
       catCache.all = { at: Date.now(), rows: allCoins };
       buildMarquee();
       loadHomeCards();
+      loadGlobalStats();
       if (currentCat === 'all' && !$('search').value.trim()) renderCgList(allCoins);
       return;
     }
@@ -908,6 +911,32 @@ function miniGtRow(p, incMap) {
     + '<div class="pr"><div class="p1">$' + fmtPrice(a.base_token_price_usd) + '</div></div>'
     + chgHtml(chg) + '</div>';
 }
+var mktAt = 0;
+function loadGlobalStats() {
+  if (mktAt && Date.now() - mktAt < 60000) return;
+  mktAt = Date.now();
+  Promise.all([
+    fetchJson(CG + '/global').catch(function () { return null; }),
+    fetchJson('https://api.alternative.me/fng/?limit=1').catch(function () { return null; })
+  ]).then(function (res) {
+    var g = res[0] && res[0].data; if (!g) return;
+    var fng = res[1] && res[1].data && res[1].data[0];
+    var fngHtml = '-';
+    if (fng) {
+      var v = parseInt(fng.value, 10);
+      var lbl = v <= 25 ? 'Takut Ekstrem' : v <= 45 ? 'Takut' : v <= 55 ? 'Netral' : v <= 75 ? 'Serakah' : 'Serakah Ekstrem';
+      var col = v <= 25 ? '#ea3943' : v <= 45 ? '#ea8c39' : v <= 55 ? '#a6b0c3' : '#93d13d';
+      fngHtml = '<span style="color:' + col + ';">' + v + ' \u00b7 ' + lbl + '</span>';
+    }
+    var chg = g.market_cap_change_percentage_24h_usd || 0;
+    $('mktStrip').innerHTML = '<div class="mktstrip">'
+      + '<div class="mktbox"><div class="k">KAPITALISASI PASAR</div><div class="v">$' + fmtBig(g.total_market_cap.usd) + ' ' + chgHtml(chg) + '</div></div>'
+      + '<div class="mktbox"><div class="k">VOLUME 24J</div><div class="v">$' + fmtBig(g.total_volume.usd) + '</div></div>'
+      + '<div class="mktbox"><div class="k">DOMINASI BTC</div><div class="v">' + (g.market_cap_percentage.btc || 0).toFixed(1).replace('.', ',') + '%</div></div>'
+      + '<div class="mktbox"><div class="k">FEAR & GREED</div><div class="v">' + fngHtml + '</div></div>'
+      + '</div>';
+  }).catch(function () {});
+}
 function loadHomeCards() {
   if (homeCardsAt && Date.now() - homeCardsAt < 60000) return;
   homeCardsAt = Date.now();
@@ -922,56 +951,6 @@ function loadHomeCards() {
     $('homeCards').innerHTML = '<div class="homecard"><h3>🔥 Sedang Tren <span class="tag">DEX · GeckoTerminal</span></h3>' + tren + '</div>'
       + (gains ? '<div class="homecard"><h3>🚀 Gainer Teratas <span class="tag">24 jam</span></h3>' + gains + '</div>' : '');
   }).catch(function () {});
-}
-/* ----- Pump.fun via DexScreener ----- */
-function loadPump(silent) {
-  if (!silent) $('coinList').innerHTML = skels();
-  var srcs = [
-    fetchJson(DS + '/token-boosts/top/v1').catch(function () { return []; }),
-    fetchJson(DS + '/token-boosts/latest/v1').catch(function () { return []; }),
-    fetchJson(DS + '/token-profiles/latest/v1').catch(function () { return []; })
-  ];
-  Promise.all(srcs).then(function (lists) {
-    var seen = {}, toks = [];
-    lists.forEach(function (list) {
-      (list || []).forEach(function (t) {
-        if (!t || t.chainId !== 'solana' || !t.tokenAddress || seen[t.tokenAddress]) return;
-        seen[t.tokenAddress] = 1;
-        toks.push(t);
-      });
-    });
-    toks = toks.slice(0, 24);
-    var jobs = toks.map(function (t) {
-      return fetchJson(DS + '/latest/dex/tokens/' + t.tokenAddress).then(function (d) {
-        var pairs = (d && d.pairs) || [];
-        if (!pairs.length) return null;
-        var best = null;
-        pairs.forEach(function (p) { if (p.dexId === 'pumpfun' || p.dexId === 'pumpswap') best = best || p; });
-        if (!best) { best = pairs.slice().sort(function (x, y) { return ((y.liquidity || {}).usd || 0) - ((x.liquidity || {}).usd || 0); })[0]; }
-        return { boost: t, pair: best };
-      }).catch(function () { return null; });
-    });
-    return Promise.all(jobs);
-  }).then(function (rows) {
-    rows = (rows || []).filter(Boolean);
-    catCache.pump = { at: Date.now(), rows: rows };
-    if (currentCat !== 'pump' || $('search').value.trim()) return;
-    if (!rows.length) { $('coinList').innerHTML = '<div class="loading">Belum ada data Pump.fun saat ini. Coba lagi sebentar.</div>'; return; }
-    var html = '';
-    rows.forEach(function (r, i) {
-      var p = r.pair;
-      var chg = parseFloat((p.priceChange || {}).h24 || 0);
-      var delay = Math.min(i, 14) * 25;
-      var gtNet = dsToGtNet(p.chainId);
-      html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + delay + 'ms">'
-        + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc((p.info || {}).imageUrl || (r.boost.icon ? 'https://cdn.dexscreener.com/cms/images/' + r.boost.icon : '')) + '" alt="">'
-        + '<div><div class="sym">🚀 ' + esc(p.baseToken.symbol) + '<span class="netbadge">PUMP.FUN</span></div>'
-        + '<div class="nm">' + esc(p.baseToken.name) + '</div></div>'
-        + '<div class="pricecol"><div class="price">$' + fmtPrice(p.priceUsd) + '</div><div class="sub2">Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
-        + chgHtml(chg) + '</div></div>';
-    });
-    $('coinList').innerHTML = html;
-  }).catch(function (e) { if (!silent && currentCat === 'pump') listError(e); });
 }
 function favKeys() {
   try { return JSON.parse(localStorage.getItem('chartku-favs') || '[]'); } catch (e) { return []; }
@@ -1010,8 +989,9 @@ function selectCat(cat) {
   $('search').value = '';
   $('listNote').textContent = CAT_NOTES[cat] || '';
   $('homeCards').style.display = cat === 'all' ? '' : 'none';
+  $('mktStrip').style.display = cat === 'all' ? '' : 'none';
   haptic();
-  if (cat === 'all') loadHomeCards();
+  if (cat === 'all') { loadHomeCards(); loadGlobalStats(); }
   var cached = catCache[cat];
   if (cached && Date.now() - cached.at < 60000) {
     if (cached.rows && (cat === 'all' || cat === 'meme')) renderCgList(cached.rows);
@@ -1033,7 +1013,6 @@ function loadCat(cat, silent) {
   if (cat === 'gain') { loadGainers(silent); return; }
   if (cat === 'all' || cat === 'meme') loadCg(cat, silent);
   else if (cat === 'trending') loadTrending(silent);
-  else if (cat === 'pump') loadPump(silent);
   else loadGt(cat, silent);
 }
 $('chipsRow').addEventListener('click', function (e) {
@@ -1059,7 +1038,7 @@ var searchTimer = null;
 $('search').addEventListener('input', function () {
   var q = this.value.trim();
   clearTimeout(searchTimer);
-  if (!q) { $('homeCards').style.display = currentCat === 'all' ? '' : 'none'; loadCat(currentCat, true); return; }
+  if (!q) { $('homeCards').style.display = currentCat === 'all' ? '' : 'none'; $('mktStrip').style.display = currentCat === 'all' ? '' : 'none'; loadCat(currentCat, true); return; }
   if (currentCat === 'all' || currentCat === 'meme') {
     var rows = (catCache[currentCat] && catCache[currentCat].rows) || allCoins;
     var f = rows.filter(function (c) { return c.symbol.toLowerCase().indexOf(q.toLowerCase()) !== -1 || c.name.toLowerCase().indexOf(q.toLowerCase()) !== -1; });
@@ -1071,6 +1050,7 @@ $('search').addEventListener('input', function () {
 });
 function remoteSearch(q) {
   $('homeCards').style.display = 'none';
+  $('mktStrip').style.display = 'none';
   var cgP = fetchJson(CG + '/search?query=' + encodeURIComponent(q)).catch(function () { return null; });
   var gtP = fetchJson(GT + '/search/pools?query=' + encodeURIComponent(q) + '&include=base_token').catch(function () { return null; });
   var dsP = fetchJson(DS + '/latest/dex/search?q=' + encodeURIComponent(q)).catch(function () { return null; });
