@@ -177,6 +177,23 @@
   .obrow .am{position:relative; color:var(--hint);}
   .obbids .pr{color:var(--green);} .obasks .pr{color:var(--red);}
   .obbids .bar{background:var(--green);} .obasks .bar{background:var(--red);}
+  /* ===== Swap gaya Convert / CEX (v6) ===== */
+  #segRanges{overflow-x:auto; scrollbar-width:none;}
+  #segRanges::-webkit-scrollbar{display:none;}
+  #segRanges button{flex:none; padding:9px 13px;}
+  .netpills{display:flex; gap:6px; margin-bottom:14px;}
+  .netpill{flex:1; padding:9px 0; border-radius:9px; border:1px solid var(--border); background:var(--bg2); color:var(--hint); font-weight:700; cursor:pointer; font-size:13px;}
+  .netpill.active{background:var(--btn); color:var(--btntext); border-color:var(--btn);}
+  .cvbox{background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:11px 12px;}
+  .cvlabel{font-size:11.5px; color:var(--hint); margin-bottom:5px;}
+  .cvrow{display:flex; gap:10px; align-items:center;}
+  .cvrow select{width:112px; flex:none; font-weight:700;}
+  .cvrow input{flex:1; text-align:right; font-size:19px; font-weight:700; background:transparent; border:none; padding:4px 2px; min-width:0;}
+  .cvrow input:focus{outline:none;}
+  .cvflip{display:flex; justify-content:center; margin:-7px 0; position:relative; z-index:2;}
+  .cvflip .flipbtn{width:34px; height:34px; border-radius:50%; border:3px solid var(--card); background:var(--btn); color:var(--btntext); font-size:15px; cursor:pointer; padding:0;}
+  .cvquote{flex:1; text-align:right; font-size:13.5px; min-height:20px; min-width:0;}
+  .netpanel .mainbtn{margin-top:12px;}
 </style>
 </head>
 <body>
@@ -223,11 +240,14 @@
   <div class="bigprice" id="dPrice">-</div>
   <div class="chg" id="dChg">-</div>
   <div class="seg" id="segRanges">
-    <button data-days="15m" class="active">15m</button>
-    <button data-days="1h">1H</button>
-    <button data-days="4h">4H</button>
-    <button data-days="1d">1D</button>
-    <button data-days="1w">1W</button>
+    <button data-days="5s">5Dtk</button>
+    <button data-days="1m" class="active">1Mnt</button>
+    <button data-days="5m">5Mnt</button>
+    <button data-days="10m">10Mnt</button>
+    <button data-days="30m">30Mnt</button>
+    <button data-days="1h">1Jam</button>
+    <button data-days="4h">4Jam</button>
+    <button data-days="1d">1Hari</button>
   </div>
   <div class="malegend" id="maLegend"></div>
   <div class="chartwrap"><canvas id="chart" class="chartcv" height="260"></canvas></div>
@@ -252,75 +272,95 @@
 
 <!-- ============ SWAP ============ -->
 <section class="view" id="viewSwap">
-
   <div class="card">
-    <h3>🟦 TON — STON.fi</h3>
-    <p class="sub">Sambungkan wallet TON (Tonkeeper dll.), lihat kurs langsung, lalu swap dibuka di STON.fi dengan pasangan sudah terisi.</p>
-    <div id="tonConnectBtn"></div>
-    <div class="addr" id="tonAddr"></div>
-    <div class="fliprow">
-      <div class="col"><label>Dari</label>
-        <select id="tonFrom"><option value="TON">TON</option><option value="USDT">USD₮</option></select></div>
-      <button class="flipbtn" id="tonFlip">⇅</button>
-      <div class="col"><label>Ke</label>
-        <select id="tonTo"><option value="USDT">USD₮</option><option value="TON">TON</option></select></div>
+    <div class="netpills">
+      <button class="netpill active" data-net="ton">TON</button>
+      <button class="netpill" data-net="sol">Solana</button>
+      <button class="netpill" data-net="evm">EVM</button>
     </div>
-    <label>Jumlah</label>
-    <input type="number" id="tonAmount" placeholder="0.0" min="0" step="any">
-    <button class="mainbtn" id="tonQuoteBtn">Cek Kurs</button>
-    <div class="quote" id="tonQuote"></div>
-    <button class="ghostbtn" id="tonSwapBtn">Swap di STON.fi ↗</button>
-  </div>
 
-  <div class="card">
-    <h3>🟣 Solana — Jupiter</h3>
-    <p class="sub">Swap langsung di dalam aplikasi bila dibuka dari browser wallet Phantom. Di Telegram, ketuk tombol buka di Phantom dulu.</p>
-    <div class="addr" id="solAddr"></div>
-    <button class="ghostbtn" id="solOpenBtn">Buka di Phantom ↗</button>
-    <div id="solSwapUi" style="display:none;">
-      <button class="mainbtn" id="solConnectBtn">Sambungkan Phantom</button>
-      <div class="fliprow">
-        <div class="col"><label>Dari</label>
-          <select id="solFrom"><option value="SOL">SOL</option><option value="USDC">USDC</option><option value="USDT">USDT</option></select></div>
-        <button class="flipbtn" id="solFlip">⇅</button>
-        <div class="col"><label>Ke</label>
-          <select id="solTo"><option value="USDC">USDC</option><option value="SOL">SOL</option><option value="USDT">USDT</option></select></div>
+    <div class="netpanel" id="panel-ton">
+      <div id="tonConnectBtn"></div>
+      <div class="addr" id="tonAddr"></div>
+      <div class="cvbox">
+        <div class="cvlabel">Dari</div>
+        <div class="cvrow">
+          <select id="tonFrom"><option value="TON">TON</option><option value="USDT">USD₮</option></select>
+          <input type="number" id="tonAmount" placeholder="0.0" min="0" step="any">
+        </div>
       </div>
-      <label>Jumlah</label>
-      <input type="number" id="solAmount" placeholder="0.0" min="0" step="any">
-      <button class="mainbtn" id="solQuoteBtn">Cek Kurs</button>
-      <div class="quote" id="solQuote"></div>
-      <button class="mainbtn" id="solSwapBtn" disabled>Swap Sekarang</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>🟠 EVM — LI.FI (BSC / Base / Ethereum)</h3>
-    <p class="sub">Swap langsung di dalam aplikasi bila dibuka dari browser wallet MetaMask. Di Telegram, ketuk tombol buka di MetaMask dulu.</p>
-    <div class="addr" id="evmAddr"></div>
-    <button class="ghostbtn" id="evmOpenBtn">Buka di MetaMask ↗</button>
-    <div id="evmSwapUi" style="display:none;">
-      <button class="mainbtn" id="evmConnectBtn">Sambungkan MetaMask</button>
-      <label>Jaringan</label>
-      <select id="evmChain">
-        <option value="56">BSC (BNB Chain)</option>
-        <option value="8453">Base</option>
-        <option value="1">Ethereum</option>
-      </select>
-      <div class="fliprow">
-        <div class="col"><label>Dari</label><select id="evmFrom"></select></div>
-        <button class="flipbtn" id="evmFlip">⇅</button>
-        <div class="col"><label>Ke</label><select id="evmTo"></select></div>
+      <div class="cvflip"><button class="flipbtn" id="tonFlip">⇅</button></div>
+      <div class="cvbox">
+        <div class="cvlabel">Ke (perkiraan)</div>
+        <div class="cvrow">
+          <select id="tonTo"><option value="USDT">USD₮</option><option value="TON">TON</option></select>
+          <div class="cvquote" id="tonQuote"></div>
+        </div>
       </div>
-      <label>Jumlah</label>
-      <input type="number" id="evmAmount" placeholder="0.0" min="0" step="any">
-      <button class="mainbtn" id="evmQuoteBtn">Cek Kurs</button>
-      <div class="quote" id="evmQuote"></div>
-      <button class="mainbtn" id="evmSwapBtn" disabled>Swap Sekarang</button>
+      <button class="mainbtn" id="tonQuoteBtn">Cek Kurs</button>
+      <button class="ghostbtn" id="tonSwapBtn">Swap di STON.fi ↗</button>
+      <p class="sub" style="margin-top:10px;">Kurs dari STON.fi — swap diselesaikan di STON.fi dengan pasangan terisi.</p>
+    </div>
+
+    <div class="netpanel" id="panel-sol" style="display:none;">
+      <div class="addr" id="solAddr"></div>
+      <button class="ghostbtn" id="solOpenBtn">Buka di Phantom ↗</button>
+      <div id="solSwapUi" style="display:none;">
+        <button class="mainbtn" id="solConnectBtn">Sambungkan Phantom</button>
+        <div class="cvbox">
+          <div class="cvlabel">Dari</div>
+          <div class="cvrow">
+            <select id="solFrom"><option value="SOL">SOL</option><option value="USDC">USDC</option><option value="USDT">USDT</option></select>
+            <input type="number" id="solAmount" placeholder="0.0" min="0" step="any">
+          </div>
+        </div>
+        <div class="cvflip"><button class="flipbtn" id="solFlip">⇅</button></div>
+        <div class="cvbox">
+          <div class="cvlabel">Ke (perkiraan)</div>
+          <div class="cvrow">
+            <select id="solTo"><option value="USDC">USDC</option><option value="SOL">SOL</option><option value="USDT">USDT</option></select>
+            <div class="cvquote" id="solQuote"></div>
+          </div>
+        </div>
+        <button class="mainbtn" id="solQuoteBtn">Cek Kurs</button>
+        <button class="mainbtn" id="solSwapBtn" disabled>Swap Sekarang</button>
+      </div>
+      <p class="sub" style="margin-top:10px;">Kurs & swap dari Jupiter. Di Telegram, buka dulu di Phantom agar wallet terbaca.</p>
+    </div>
+
+    <div class="netpanel" id="panel-evm" style="display:none;">
+      <div class="addr" id="evmAddr"></div>
+      <button class="ghostbtn" id="evmOpenBtn">Buka di MetaMask ↗</button>
+      <div id="evmSwapUi" style="display:none;">
+        <button class="mainbtn" id="evmConnectBtn">Sambungkan MetaMask</button>
+        <label>Jaringan</label>
+        <select id="evmChain">
+          <option value="56">BSC (BNB Chain)</option>
+          <option value="8453">Base</option>
+          <option value="1">Ethereum</option>
+        </select>
+        <div class="cvbox">
+          <div class="cvlabel">Dari</div>
+          <div class="cvrow">
+            <select id="evmFrom"></select>
+            <input type="number" id="evmAmount" placeholder="0.0" min="0" step="any">
+          </div>
+        </div>
+        <div class="cvflip"><button class="flipbtn" id="evmFlip">⇅</button></div>
+        <div class="cvbox">
+          <div class="cvlabel">Ke (perkiraan)</div>
+          <div class="cvrow">
+            <select id="evmTo"></select>
+            <div class="cvquote" id="evmQuote"></div>
+          </div>
+        </div>
+        <button class="mainbtn" id="evmQuoteBtn">Cek Kurs</button>
+        <button class="mainbtn" id="evmSwapBtn" disabled>Swap Sekarang</button>
+      </div>
+      <p class="sub" style="margin-top:10px;">Kurs & rute dari LI.FI (BSC / Base / Ethereum). Di Telegram, buka dulu di MetaMask agar wallet terbaca.</p>
     </div>
   </div>
-
-  <p class="muted">Kurs & rute: STON.fi (TON), Jupiter (Solana), LI.FI (EVM). Aplikasi ini tidak pernah meminta seed phrase atau private key — semua transaksi ditandatangani di wallet-mu.</p>
+  <p class="muted">Aplikasi ini tidak pernah meminta seed phrase atau private key — semua transaksi ditandatangani di wallet-mu.</p>
 </section>
 
 <!-- ============ LIVE CHAT ============ -->
@@ -860,7 +900,7 @@ function remoteSearch(q) {
 <script>
 'use strict';
 /* ---------- Detail + grafik LIVE ---------- */
-var currentDays = '15m';
+var currentDays = '1m';
 var chartRows = [];
 var chartAnim = null;
 var liveWs = null;
@@ -882,12 +922,12 @@ function setLiveBadge(mode) {
 function openDetail(D) {
   if (D.kind === 'gt' && !D.net) { toast('Grafik belum tersedia untuk jaringan token ini.'); return; }
   currentDetail = D;
-  currentDays = '15m';
+  currentDays = '1m';
   chartRows = [];
   anchorPrice = 0; lastLivePrice = 0; lastShownPrice = 0;
   D.onBinance = undefined;
   var btns = $('segRanges').querySelectorAll('button');
-  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-days') === '15m');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-days') === '1m');
   $('dPrice').textContent = '-';
   $('dChg').textContent = '-';
   $('dUpdated').textContent = 'Memuat…';
@@ -1038,8 +1078,19 @@ function loadStats(first) {
       }).catch(function () {});
   }
 }
-var GT_RANGES = { '15m': ['minute', 15, 96], '1h': ['hour', 1, 120], '4h': ['hour', 4, 105], '1d': ['day', 1, 100], '1w': ['week', 1, 52] };
-var CG_DAYS = { '15m': '1', '1h': '2', '4h': '7', '1d': '30', '1w': '90' };
+var GT_RANGES = { '5s': ['minute', 1, 120, 0], '1m': ['minute', 1, 120, 0], '5m': ['minute', 5, 100, 0], '10m': ['minute', 1, 1000, 600000], '30m': ['minute', 15, 200, 1800000], '1h': ['hour', 1, 120, 0], '4h': ['hour', 4, 105, 0], '1d': ['day', 1, 100, 0] };
+var CG_DAYS = { '5s': '1', '1m': '1', '5m': '1', '10m': '1', '30m': '1', '1h': '2', '4h': '7', '1d': '30' };
+var BIN_FETCH = { '5s': ['1s', 1000, 5000], '1m': ['1m', 100, 0], '5m': ['5m', 100, 0], '10m': ['1m', 1000, 600000], '30m': ['30m', 100, 0], '1h': ['1h', 100, 0], '4h': ['4h', 100, 0], '1d': ['1d', 100, 0] };
+function aggRows(rows, bucketMs) {
+  if (!bucketMs) return rows;
+  var out = [], cur = null;
+  rows.forEach(function (k) {
+    var bt = Math.floor(k[0] / bucketMs) * bucketMs;
+    if (!cur || cur[0] !== bt) { cur = [bt, k[1], k[2], k[3], k[4], k[5] || 0]; out.push(cur); }
+    else { if (k[2] > cur[2]) cur[2] = k[2]; if (k[3] < cur[3]) cur[3] = k[3]; cur[4] = k[4]; cur[5] += (k[5] || 0); }
+  });
+  return out;
+}
 var BIN = 'https://data-api.binance.vision';
 function loadCgOhlc(animate) {
   var D = currentDetail;
@@ -1055,11 +1106,13 @@ function loadChart(animate) {
   if (D.kind === 'cg') {
     if (D.symbol) {
       var pair = (D.symbol + 'USDT').toUpperCase();
-      fetchJson(BIN + '/api/v3/klines?symbol=' + pair + '&interval=' + currentDays + '&limit=100').then(function (ks) {
+      var bf = BIN_FETCH[currentDays] || BIN_FETCH['1m'];
+      fetchJson(BIN + '/api/v3/klines?symbol=' + pair + '&interval=' + bf[0] + '&limit=' + bf[1]).then(function (ks) {
         if (!currentDetail) return;
         if (!ks || !ks.length) throw new Error('empty');
         D.onBinance = true;
-        chartRows = ks.map(function (k) { return [k[0], parseFloat(k[1]), parseFloat(k[2]), parseFloat(k[3]), parseFloat(k[4]), parseFloat(k[5])]; });
+        var mapped = ks.map(function (k) { return [k[0], parseFloat(k[1]), parseFloat(k[2]), parseFloat(k[3]), parseFloat(k[4]), parseFloat(k[5])]; });
+        chartRows = aggRows(mapped, bf[2]).slice(-110);
         if (animate) animateChart(); else drawChart(1);
       }).catch(function () {
         if (!currentDetail) return;
@@ -1071,14 +1124,15 @@ function loadChart(animate) {
     loadCgOhlc(animate);
     return;
   }
-  var r = GT_RANGES[currentDays] || GT_RANGES['15m'];
+  var r = GT_RANGES[currentDays] || GT_RANGES['1m'];
   var url = GT + '/networks/' + encodeURIComponent(D.net) + '/pools/' + encodeURIComponent(D.pool) + '/ohlcv/' + r[0] + '?aggregate=' + r[1] + '&limit=' + r[2];
   fetchJson(url).then(function (d) {
     if (!currentDetail) return;
     var rows = (d && d.data && d.data.attributes) ? d.data.attributes.ohlcv_list : null;
     if (!rows || !rows.length) return;
     rows = rows.slice().sort(function (x, y) { return x[0] - y[0]; });
-    chartRows = rows.map(function (k) { return [k[0] * 1000, k[1], k[2], k[3], k[4], k[5]]; });
+    var mapped = rows.map(function (k) { return [k[0] * 1000, k[1], k[2], k[3], k[4], k[5]]; });
+    chartRows = aggRows(mapped, r[3]).slice(-110);
     if (animate) animateChart(); else drawChart(1);
   }).catch(function (e) {
     if (e.message === 'ratelimit') toast('Server data sibuk sebentar — grafik dicoba lagi otomatis.');
@@ -1159,7 +1213,8 @@ function startLive() {
   startPoll(20000);
   if (currentDetail.onBinance === false) return;
   var ws;
-  try { ws = new WebSocket('wss://data-stream.binance.vision/stream?streams=' + sym + 'usdt@miniTicker/' + sym + 'usdt@kline_' + currentDays); }
+  var streamIv = (BIN_FETCH[currentDays] || BIN_FETCH['1m'])[0];
+  try { ws = new WebSocket('wss://data-stream.binance.vision/stream?streams=' + sym + 'usdt@miniTicker/' + sym + 'usdt@kline_' + streamIv); }
   catch (e) { return; }
   liveWs = ws;
   var opened = false;
@@ -1182,9 +1237,11 @@ function startLive() {
         if (anchorPrice && (kp > anchorPrice * 1.3 || kp < anchorPrice * 0.72)) return;
         anchorPrice = kp;
         if (chartRows.length) {
+          var bucketMs = (BIN_FETCH[currentDays] || BIN_FETCH['1m'])[2] || 0;
+          var bt = bucketMs ? Math.floor(k.t / bucketMs) * bucketMs : k.t;
           var last = chartRows[chartRows.length - 1];
-          if (k.t === last[0]) { last[2] = parseFloat(k.h); last[3] = parseFloat(k.l); last[4] = kp; last[5] = parseFloat(k.v); }
-          else if (k.t > last[0]) { chartRows.push([k.t, parseFloat(k.o), parseFloat(k.h), parseFloat(k.l), kp, parseFloat(k.v)]); if (chartRows.length > 130) chartRows.shift(); }
+          if (bt === last[0]) { if (parseFloat(k.h) > last[2]) last[2] = parseFloat(k.h); if (parseFloat(k.l) < last[3]) last[3] = parseFloat(k.l); last[4] = kp; }
+          else if (bt > last[0]) { chartRows.push([bt, parseFloat(k.o), parseFloat(k.h), parseFloat(k.l), kp, parseFloat(k.v)]); if (chartRows.length > 130) chartRows.shift(); }
         }
         setPriceDisplay(kp, false);
         lastLivePrice = kp;
@@ -1312,7 +1369,7 @@ function drawChart(progress) {
     var ridx = Math.min(shown - 1, Math.floor((n - 1) * ti / 3));
     if (ridx < 0) break;
     var dt = new Date(rows[ridx][0]);
-    var lbl = (currentDays === '1d' || currentDays === '1w')
+    var lbl = currentDays === '1d'
       ? (dt.getDate() + '/' + (dt.getMonth() + 1))
       : (('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2));
     ctx.fillText(lbl, Math.max(0, Math.min(plotW - 32, ridx * cw)), h - 4);
@@ -1331,6 +1388,19 @@ function drawChart(progress) {
   ctx.beginPath(); ctx.arc(fx, y(last), 3.4, 0, Math.PI * 2);
   ctx.fillStyle = lastCol; ctx.fill();
 }
+/* ----- Swap: panel jaringan ----- */
+(function () {
+  var pills = document.querySelectorAll('.netpill');
+  function setNet(net) {
+    pills.forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-net') === net); });
+    ['ton', 'sol', 'evm'].forEach(function (n) {
+      var el = $('panel-' + n);
+      if (el) el.style.display = n === net ? '' : 'none';
+    });
+  }
+  pills.forEach(function (p) { p.addEventListener('click', function () { haptic(); setNet(p.getAttribute('data-net')); }); });
+  setNet('ton');
+})();
 /* ----- Mulai ----- */
 initTheme();
 loadCat('all', false);
