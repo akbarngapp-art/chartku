@@ -191,7 +191,7 @@
   .cvrow input{flex:1; text-align:right; font-size:19px; font-weight:700; background:transparent; border:none; padding:4px 2px; min-width:0;}
   .cvrow input:focus{outline:none;}
   .cvflip{display:flex; justify-content:center; margin:-7px 0; position:relative; z-index:2;}
-  .cvflip .flipbtn{width:34px; height:34px; border-radius:50%; border:3px solid var(--card); background:var(--btn); color:var(--btntext); font-size:15px; cursor:pointer; padding:0;}
+  .cvflip .flipbtn{width:34px; height:34px; border-radius:50%; border:3px solid var(--card); background:#58a700; color:#fff; font-size:15px; cursor:pointer; padding:0;}
   .cvquote{flex:1; text-align:right; font-size:13.5px; min-height:20px; min-width:0;}
   .netpanel .mainbtn{margin-top:12px;}
   /* ===== Aktivitas beli/jual (v7) ===== */
@@ -337,7 +337,8 @@
     </div>
 
     <div class="netpanel" id="panel-ton">
-      <div id="tonConnectBtn"></div>
+      <button class="mainbtn" id="tonConnectCustom" style="margin-top:0;">💎 Sambungkan Wallet TON</button>
+      <div id="tonConnectBtn" style="display:none;"></div>
       <div class="addr" id="tonAddr"></div>
       <div class="cvbox">
         <div class="cvlabel">Dari</div>
@@ -772,7 +773,7 @@ function watchSentinel() {
 /* ----- GeckoTerminal pools ----- */
 function gtIncludedMap(d) {
   var map = {};
-  (d.included || []).forEach(function (inc) { map[inc.type + ':' + inc.id] = inc.attributes || {}; });
+  (d.included || []).forEach(function (inc) { var at = inc.attributes || {}; map[inc.type + ':' + inc.id] = at; map['token:' + inc.id] = at; map['tokens:' + inc.id] = at; });
   return map;
 }
 function gtNetOf(pool) {
@@ -1429,7 +1430,7 @@ function actRow(side, price, qty, usd, date, maker, txUrl, sym) {
   return '<div class="actrow"><div class="actl1"><span class="side" style="color:var(--' + (side === 'buy' ? 'green' : 'red') + ');">' + (side === 'buy' ? 'BELI' : 'JUAL') + '</span>'
     + '<span>$' + fmtPrice(price) + '</span><span class="usd">$' + fmtBig(usd) + '</span></div>'
     + '<div class="actl2"><span>' + fmtQty(qty) + ' ' + esc(sym || '') + '</span>' + (maker ? '<span>' + shortAddr(maker) + '</span>' : '')
-    + '<span class="tm">' + tm + '</span>' + (txUrl ? '<a class="txlink" href="' + txUrl + '" target="_blank" rel="noopener">TX ↗</a>' : '') + '</div></div>';
+    + '<span class="tm">' + tm + '</span>' + '</div></div>';
 }
 function renderActivity(html, buys, sells, src) {
   $('actList').innerHTML = html || '<div class="loading">Belum ada aktivitas.</div>';
@@ -1729,6 +1730,13 @@ try {
     tonUi.onStatusChange(function (w) {
       tonWalletAddr = w && w.account ? w.account.address : '';
       $('tonAddr').textContent = tonWalletAddr ? ('Terhubung: ' + shortAddr(tonWalletAddr)) : '';
+      var cb = $('tonConnectCustom');
+      if (cb) cb.textContent = tonWalletAddr ? ('\u{1F48E} ' + shortAddr(tonWalletAddr) + ' \u2014 ketuk untuk putuskan') : '\u{1F48E} Sambungkan Wallet TON';
+    });
+    var tcb = $('tonConnectCustom');
+    if (tcb) tcb.addEventListener('click', function () {
+      if (!tonUi) return;
+      if (tonWalletAddr) { tonUi.disconnect(); } else { tonUi.openModal(); }
     });
   }
 } catch (e) { /* TON Connect tidak tersedia di luar Telegram/browser tertentu */ }
