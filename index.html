@@ -242,6 +242,15 @@
   .quotebox{background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:10px 12px; margin-top:10px; font-size:13px; line-height:1.55;}
   .mainbtn{background:#58a700; box-shadow:0 6px 18px rgba(88,167,0,.3);}
   .mainbtn:disabled{background:var(--bg2); color:var(--hint); box-shadow:none;}
+  html,body{overflow-x:hidden;}
+  body{overscroll-behavior-y:none;}
+  #chart{touch-action:pan-y; display:block; width:100%;}
+  #tpQuery{width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:11px; background:var(--bg2); color:var(--text); font-size:14px; box-sizing:border-box; margin-bottom:6px;}
+  .tprow{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--border); cursor:pointer;}
+  .tprow img{width:30px; height:30px; border-radius:50%; flex:none; background:var(--bg2);}
+  .tprow .tn{flex:1; min-width:0;}
+  .tprow .ts{font-weight:800; font-size:14px;}
+  .tprow .tnm{color:var(--hint); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 </style>
 </head>
 <body>
@@ -425,6 +434,14 @@
   </div>
   <p class="muted">Aplikasi ini tidak pernah meminta seed phrase atau private key — semua transaksi ditandatangani di wallet-mu.</p>
 </section>
+<div class="sheet" id="tokenSheet">
+  <div class="backdrop" id="tokenSheetBg"></div>
+  <div class="panel">
+    <h3>Pilih Token <span class="tag" id="tpNet"></span></h3>
+    <input type="text" id="tpQuery" placeholder="Cari nama/simbol, atau tempel alamat token…" autocomplete="off">
+    <div id="tpResults"><div class="loading">Ketik minimal 2 huruf untuk mencari — sumber DexScreener & STON.fi.</div></div>
+  </div>
+</div>
 
 <!-- ============ LIVE CHAT ============ -->
 <section class="view" id="viewChat">
@@ -909,14 +926,27 @@ function loadHomeCards() {
 /* ----- Pump.fun via DexScreener ----- */
 function loadPump(silent) {
   if (!silent) $('coinList').innerHTML = skels();
-  fetchJson(DS + '/token-boosts/top/v1').then(function (list) {
-    var toks = (list || []).filter(function (t) { return t.chainId === 'solana'; }).slice(0, 14);
+  var srcs = [
+    fetchJson(DS + '/token-boosts/top/v1').catch(function () { return []; }),
+    fetchJson(DS + '/token-boosts/latest/v1').catch(function () { return []; }),
+    fetchJson(DS + '/token-profiles/latest/v1').catch(function () { return []; })
+  ];
+  Promise.all(srcs).then(function (lists) {
+    var seen = {}, toks = [];
+    lists.forEach(function (list) {
+      (list || []).forEach(function (t) {
+        if (!t || t.chainId !== 'solana' || !t.tokenAddress || seen[t.tokenAddress]) return;
+        seen[t.tokenAddress] = 1;
+        toks.push(t);
+      });
+    });
+    toks = toks.slice(0, 24);
     var jobs = toks.map(function (t) {
       return fetchJson(DS + '/latest/dex/tokens/' + t.tokenAddress).then(function (d) {
         var pairs = (d && d.pairs) || [];
         if (!pairs.length) return null;
         var best = null;
-        pairs.forEach(function (p) { if (p.dexId === 'pumpfun') best = p; });
+        pairs.forEach(function (p) { if (p.dexId === 'pumpfun' || p.dexId === 'pumpswap') best = best || p; });
         if (!best) { best = pairs.slice().sort(function (x, y) { return ((y.liquidity || {}).usd || 0) - ((x.liquidity || {}).usd || 0); })[0]; }
         return { boost: t, pair: best };
       }).catch(function () { return null; });
@@ -934,7 +964,7 @@ function loadPump(silent) {
       var delay = Math.min(i, 14) * 25;
       var gtNet = dsToGtNet(p.chainId);
       html += '<div class="coinrow" data-kind="gt" data-net="' + esc(gtNet || '') + '" data-pool="' + esc(p.pairAddress) + '" style="animation-delay:' + delay + 'ms">'
-        + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc(r.boost.icon || (p.info || {}).imageUrl || '') + '" alt="">'
+        + '<img class="coinicon" referrerpolicy="no-referrer" data-sym="' + esc(p.baseToken.symbol || '?') + '" onerror="iconFallback(this)" src="' + esc((p.info || {}).imageUrl || (r.boost.icon ? 'https://cdn.dexscreener.com/cms/images/' + r.boost.icon : '')) + '" alt="">'
         + '<div><div class="sym">🚀 ' + esc(p.baseToken.symbol) + '<span class="netbadge">PUMP.FUN</span></div>'
         + '<div class="nm">' + esc(p.baseToken.name) + '</div></div>'
         + '<div class="pricecol"><div class="price">$' + fmtPrice(p.priceUsd) + '</div><div class="sub2">Vol $' + fmtBig((p.volume || {}).h24) + '</div></div>'
@@ -1183,36 +1213,53 @@ function gotoSwap(side) {
   haptic();
   var D = currentDetail;
   var msg = side === 'buy' ? 'Pilih jaringan & token untuk membeli di tab Swap.' : 'Pilih jaringan & token untuk menjual di tab Swap.';
-  if (D && D.kind === 'gt' && window.setSwapNet) {
+  if (D && window.setSwapNet) {
     var sym = (D.symbol || '').toUpperCase();
-    if (D.net === 'ton') {
-      window.setSwapNet('ton');
-      try {
+    if (D.kind === 'gt') {
+      if (D.net === 'ton') {
+        window.setSwapNet('ton');
         if (sym === 'USDT' || sym === 'TON') {
           if (side === 'buy') { $('tonTo').value = sym; $('tonFrom').value = sym === 'TON' ? 'USDT' : 'TON'; }
           else { $('tonFrom').value = sym; $('tonTo').value = sym === 'TON' ? 'USDT' : 'TON'; }
+          msg = 'Swap disesuaikan ke jaringan TON.';
+        } else if (D.tokenAddr && typeof window.swapSetToken === 'function') {
+          window.swapSetToken('ton', null, D.tokenAddr, sym, side);
+          msg = 'Menyiapkan token TON ini di Swap…';
         }
-      } catch (e) {}
-      msg = 'Swap disesuaikan ke jaringan TON.';
-    } else if (D.net === 'solana') {
-      window.setSwapNet('sol');
-      try {
+      } else if (D.net === 'solana') {
+        window.setSwapNet('sol');
         if (typeof SOL_TOKENS !== 'undefined' && SOL_TOKENS[sym]) {
           if (side === 'buy') $('solTo').value = sym; else $('solFrom').value = sym;
+          msg = 'Swap disesuaikan ke jaringan Solana.';
+        } else if (D.tokenAddr && typeof window.swapSetToken === 'function') {
+          window.swapSetToken('sol', null, D.tokenAddr, sym, side);
+          msg = 'Menyiapkan token Solana ini di Swap…';
         }
-      } catch (e) {}
-      msg = 'Swap disesuaikan ke jaringan Solana.';
-    } else if (D.net === 'bsc' || D.net === 'eth' || D.net === 'base') {
-      window.setSwapNet('evm');
-      var chainId = D.net === 'bsc' ? '56' : D.net === 'base' ? '8453' : '1';
-      try {
-        $('evmChain').value = chainId;
-        if (typeof fillEvmTokens === 'function') fillEvmTokens();
+      } else if (D.net === 'bsc' || D.net === 'eth' || D.net === 'base') {
+        window.setSwapNet('evm');
+        var chainId = D.net === 'bsc' ? '56' : D.net === 'base' ? '8453' : '1';
+        try {
+          $('evmChain').value = chainId;
+          if (typeof fillEvmTokens === 'function') fillEvmTokens();
+        } catch (e) {}
         if (typeof EVM_CHAINS !== 'undefined' && EVM_CHAINS[chainId] && EVM_CHAINS[chainId].tokens[sym]) {
           if (side === 'buy') $('evmTo').value = sym; else $('evmFrom').value = sym;
+          msg = 'Swap disesuaikan ke jaringan ' + netLabel(D.net) + '.';
+        } else if (D.tokenAddr && typeof window.swapSetToken === 'function') {
+          window.swapSetToken('evm', chainId, D.tokenAddr, sym, side);
+          msg = 'Menyiapkan token ini di Swap…';
         }
-      } catch (e) {}
-      msg = 'Swap disesuaikan ke jaringan ' + netLabel(D.net) + '.';
+      }
+    } else if (D.kind === 'cg' && D.id && typeof window.swapSetToken === 'function') {
+      fetchJson(CG + '/coins/' + encodeURIComponent(D.id)).then(function (c) {
+        var pl = (c && c.platforms) || {};
+        if (pl.solana) { window.setSwapNet('sol'); window.swapSetToken('sol', null, pl.solana, sym, side); }
+        else if (pl['binance-smart-chain']) { window.setSwapNet('evm'); try { $('evmChain').value = '56'; fillEvmTokens(); } catch (e) {} window.swapSetToken('evm', '56', pl['binance-smart-chain'], sym, side); }
+        else if (pl.base) { window.setSwapNet('evm'); try { $('evmChain').value = '8453'; fillEvmTokens(); } catch (e) {} window.swapSetToken('evm', '8453', pl.base, sym, side); }
+        else if (pl.ethereum) { window.setSwapNet('evm'); try { $('evmChain').value = '1'; fillEvmTokens(); } catch (e) {} window.swapSetToken('evm', '1', pl.ethereum, sym, side); }
+        else toast('Token ini tidak punya alamat kontrak Solana/EVM yang dikenal.');
+      }).catch(function () {});
+      msg = 'Menyiapkan token ini di Swap…';
     }
   }
   showView('swap');
@@ -1303,6 +1350,7 @@ function loadStats(first) {
         var tok = incMap['tokens:' + rel.id] || {};
         var sym = tok.symbol || String(a.name || '?').split(' /')[0];
         D.symbol = sym;
+        try { var rid = rel.id || ''; var ixx = rid.indexOf('_0x'); D.tokenAddr = ixx > 0 ? rid.slice(ixx + 1) : rid.slice(rid.indexOf('_') + 1); } catch (e) {}
         $('dIcon').src = tok.image_url || '';
         $('dSym').textContent = sym + ' / USD';
         $('dName').textContent = (tok.name || a.name || '') + ' · ' + netLabel(D.net) + ' · Pool DEX';
@@ -1323,6 +1371,11 @@ function loadStats(first) {
       }).catch(function () {});
   }
 }
+var rszTimer = null;
+window.addEventListener('resize', function () {
+  if (rszTimer) clearTimeout(rszTimer);
+  rszTimer = setTimeout(function () { if (currentDetail && typeof chartRows !== 'undefined' && chartRows && chartRows.length) drawChart(1); }, 180);
+});
 var GT_RANGES = { '5s': ['minute', 1, 120, 0], '1m': ['minute', 1, 120, 0], '5m': ['minute', 5, 100, 0], '10m': ['minute', 1, 1000, 600000], '30m': ['minute', 15, 200, 1800000], '1h': ['hour', 1, 120, 0], '4h': ['hour', 4, 105, 0], '1d': ['day', 1, 100, 0] };
 var CG_DAYS = { '5s': '1', '1m': '1', '5m': '1', '10m': '1', '30m': '1', '1h': '2', '4h': '7', '1d': '30' };
 var BIN_FETCH = { '5s': ['1s', 1000, 5000], '1m': ['1m', 100, 0], '5m': ['5m', 100, 0], '10m': ['1m', 1000, 600000], '30m': ['30m', 100, 0], '1h': ['1h', 100, 0], '4h': ['4h', 100, 0], '1d': ['1d', 100, 0] };
@@ -1780,9 +1833,9 @@ $('tonSwapBtn').addEventListener('click', function () {
 
 /* ================= Solana — Jupiter ================= */
 var SOL_TOKENS = {
-  SOL: { mint: 'So11111111111111111111111111111111111111112', dec: 9 },
-  USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
-  USDT: { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
+  SOL: { mint: 'So11111111111111111111111111111111111111112', dec: 9, sym: 'SOL' },
+  USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6, sym: 'USDC' },
+  USDT: { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6, sym: 'USDT' }
 };
 function solProvider() {
   if (window.phantom && window.phantom.solana) return window.phantom.solana;
@@ -1846,7 +1899,7 @@ $('solQuoteBtn').addEventListener('click', function () {
     solQuote = d;
     var recv = fromUnits(d.outAmount, to.dec);
     var impact = parseFloat(d.priceImpactPct || '0') * 100;
-    box.innerHTML = 'Kamu terima ≈ <b>' + recv + ' ' + $('solTo').value + '</b>'
+    box.innerHTML = 'Kamu terima ≈ <b>' + recv + ' ' + (to.sym || $('solTo').value) + '</b>'
       + '<br><span class="muted">Dampak harga: ' + impact.toFixed(2) + '% · Slippage 0,5%</span>';
     $('solRecv').textContent = recv;
     $('solSwapBtn').disabled = !solWallet;
@@ -1931,11 +1984,15 @@ function fillEvmTokens() {
   var f = $('evmFrom'), t = $('evmTo');
   f.innerHTML = ''; t.innerHTML = '';
   syms.forEach(function (s) {
-    f.innerHTML += '<option value="' + s + '">' + s + '</option>';
-    t.innerHTML += '<option value="' + s + '">' + s + '</option>';
+    var lbl = (ch.tokens[s] && ch.tokens[s].sym) || s;
+    f.innerHTML += '<option value="' + s + '">' + lbl + '</option>';
+    t.innerHTML += '<option value="' + s + '">' + lbl + '</option>';
   });
+  f.innerHTML += '<option value="__add__">＋ Cari token lain…</option>';
+  t.innerHTML += '<option value="__add__">＋ Cari token lain…</option>';
   f.value = syms[0];
   t.value = syms.indexOf('USDT') >= 0 ? 'USDT' : syms[1];
+  f.dataset.prev = f.value; t.dataset.prev = t.value;
   evmQuote = null; $('evmSwapBtn').disabled = true;
 }
 (function initEvmWallet() {
@@ -2007,8 +2064,8 @@ $('evmQuoteBtn').addEventListener('click', function () {
     evmQuote = d;
     var recv = fromUnits(d.estimate.toAmount, to.dec);
     var min = fromUnits(d.estimate.toAmountMin, to.dec);
-    box.innerHTML = 'Kamu terima ≈ <b>' + recv + ' ' + $('evmTo').value + '</b> via ' + esc(d.toolDetails ? d.toolDetails.name : d.tool || 'DEX')
-      + '<br><span class="muted">Minimum: ' + min + ' ' + $('evmTo').value + ' · Rantai ' + ch.label + '</span>';
+    box.innerHTML = 'Kamu terima ≈ <b>' + recv + ' ' + (to.sym || $('evmTo').value) + '</b> via ' + esc(d.toolDetails ? d.toolDetails.name : d.tool || 'DEX')
+      + '<br><span class="muted">Minimum: ' + min + ' ' + (to.sym || $('evmTo').value) + ' · Rantai ' + ch.label + '</span>';
     $('evmRecv').textContent = recv;
     $('evmSwapBtn').disabled = false;
   }).catch(function (e) { box.textContent = 'Gagal mengambil kurs: ' + String(e && e.message || '').slice(0, 100); });
@@ -2051,6 +2108,161 @@ $('evmSwapBtn').addEventListener('click', function () {
   });
 });
 fillEvmTokens();
+
+/* ===== Token dinamis: semua koin di aplikasi bisa di-swap ===== */
+function addTokenOpt(selId, value, label) {
+  var sel = $(selId); if (!sel) return;
+  for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === value) return;
+  var o = document.createElement('option'); o.value = value; o.textContent = label;
+  var add = null;
+  for (var j = 0; j < sel.options.length; j++) if (sel.options[j].value === '__add__') add = sel.options[j];
+  if (add) sel.insertBefore(o, add); else sel.appendChild(o);
+}
+function ensureAddOpt(selId) {
+  var sel = $(selId); if (!sel) return;
+  for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === '__add__') return;
+  var o = document.createElement('option'); o.value = '__add__'; o.textContent = '＋ Cari token lain…';
+  sel.appendChild(o);
+}
+function fireChange(sel) { sel.dispatchEvent(new Event('change')); }
+function gtTokenInfo(gtNet, addr) {
+  return fetchJson(GT + '/networks/' + gtNet + '/tokens/' + encodeURIComponent(addr)).then(function (d) {
+    var a = (d && d.data && d.data.attributes) || {};
+    return { dec: (typeof a.decimals === 'number' ? a.decimals : null), sym: a.symbol || '', name: a.name || '' };
+  });
+}
+var STON_ASSETS = null;
+function stonAssets() {
+  if (STON_ASSETS) return Promise.resolve(STON_ASSETS);
+  return fetch('https://api.ston.fi/v1/assets').then(function (r) { return r.json(); }).then(function (d) {
+    STON_ASSETS = (d && d.asset_list) || [];
+    return STON_ASSETS;
+  }).catch(function () { return []; });
+}
+function regSol(mint, sym, dec) {
+  SOL_TOKENS[mint] = { mint: mint, dec: dec, sym: sym };
+  addTokenOpt('solFrom', mint, sym); addTokenOpt('solTo', mint, sym);
+}
+function regEvm(chainId, addr, sym, dec) {
+  if (!EVM_CHAINS[chainId]) return;
+  EVM_CHAINS[chainId].tokens[addr] = { addr: addr, dec: dec, sym: sym };
+  if ($('evmChain').value === chainId) fillEvmTokens();
+}
+function regTon(addr, sym, dec) {
+  TON_TOKENS[addr] = { addr: addr, dec: dec, sym: sym };
+  addTokenOpt('tonFrom', addr, sym); addTokenOpt('tonTo', addr, sym);
+}
+function setSelValue(selId, value) {
+  var sel = $(selId); if (!sel) return;
+  sel.value = value; sel.dataset.prev = value; fireChange(sel);
+}
+window.swapSetToken = function (panel, chainId, addr, sym, side) {
+  if (!addr) return;
+  var toId = panel === 'sol' ? 'solTo' : panel === 'evm' ? 'evmTo' : 'tonTo';
+  var fromId = panel === 'sol' ? 'solFrom' : panel === 'evm' ? 'evmFrom' : 'tonFrom';
+  var target = side === 'buy' ? toId : fromId;
+  if (panel === 'sol') {
+    var existKey = null;
+    Object.keys(SOL_TOKENS).forEach(function (k) { if (SOL_TOKENS[k].mint === addr) existKey = k; });
+    if (existKey) { setSelValue(target, existKey); return; }
+    gtTokenInfo('solana', addr).then(function (info) {
+      if (info.dec === null) { toast('Desimal token tidak ditemukan.'); return; }
+      regSol(addr, info.sym || sym || 'TOKEN', info.dec);
+      setSelValue(target, addr);
+      toast('Token ' + (info.sym || sym) + ' siap di Swap.');
+    }).catch(function () { toast('Gagal memuat info token.'); });
+  } else if (panel === 'evm') {
+    var gtNet = chainId === '56' ? 'bsc' : chainId === '8453' ? 'base' : 'eth';
+    var key = null;
+    Object.keys(EVM_CHAINS[chainId].tokens).forEach(function (k) { if (EVM_CHAINS[chainId].tokens[k].addr.toLowerCase() === addr.toLowerCase()) key = k; });
+    if (key) { setSelValue(target, key); return; }
+    gtTokenInfo(gtNet, addr).then(function (info) {
+      if (info.dec === null) { toast('Desimal token tidak ditemukan.'); return; }
+      regEvm(chainId, addr, info.sym || sym || 'TOKEN', info.dec);
+      setSelValue(target, addr);
+      toast('Token ' + (info.sym || sym) + ' siap di Swap.');
+    }).catch(function () { toast('Gagal memuat info token.'); });
+  } else if (panel === 'ton') {
+    var tKey = null;
+    Object.keys(TON_TOKENS).forEach(function (k) { if (TON_TOKENS[k].addr === addr) tKey = k; });
+    if (tKey) { setSelValue(target, tKey); return; }
+    stonAssets().then(function (list) {
+      var hit = null;
+      list.forEach(function (a) { if (a.contract_address === addr) hit = a; });
+      if (!hit) { toast('Token TON ini tidak ada di daftar STON.fi.'); return; }
+      regTon(addr, hit.symbol || sym || 'TOKEN', typeof hit.decimals === 'number' ? hit.decimals : 9);
+      setSelValue(target, addr);
+      toast('Token ' + (hit.symbol || sym) + ' siap di Swap.');
+    });
+  }
+};
+/* ----- Pemilih token (sheet) ----- */
+var tpPanel = 'sol', tpSelId = null, tpTimer = null;
+function openTokenPicker(panel, selId) {
+  tpPanel = panel; tpSelId = selId;
+  $('tpNet').textContent = panel === 'sol' ? 'Solana' : panel === 'ton' ? 'TON' : evmChain().label;
+  $('tpQuery').value = '';
+  $('tpResults').innerHTML = '<div class="loading">Ketik minimal 2 huruf untuk mencari — sumber DexScreener & STON.fi.</div>';
+  $('tokenSheet').classList.add('open');
+  setTimeout(function () { try { $('tpQuery').focus(); } catch (e) {} }, 60);
+}
+function closeTokenPicker() { $('tokenSheet').classList.remove('open'); }
+function tpRowHtml(img, sym, name, addr) {
+  return '<div class="tprow" data-addr="' + esc(addr) + '" data-sym="' + esc(sym || '') + '"><img referrerpolicy="no-referrer" data-sym="' + esc(sym || '?') + '" onerror="iconFallback(this)" src="' + esc(img || '') + '" alt=""><div class="tn"><div class="ts">' + esc(sym || '?') + '</div><div class="tnm">' + esc(name || '') + ' · ' + esc(shortAddr(addr)) + '</div></div></div>';
+}
+function tpSearch(q) {
+  q = (q || '').trim();
+  var box = $('tpResults');
+  if (q.length < 2) { box.innerHTML = '<div class="loading">Ketik minimal 2 huruf untuk mencari — sumber DexScreener & STON.fi.</div>'; return; }
+  box.innerHTML = '<div class="loading">Mencari…</div>';
+  if (tpPanel === 'ton') {
+    stonAssets().then(function (list) {
+      var ql = q.toLowerCase();
+      var hits = list.filter(function (a) { return (a.symbol || '').toLowerCase().indexOf(ql) >= 0 || (a.display_name || '').toLowerCase().indexOf(ql) >= 0 || a.contract_address === q; }).slice(0, 20);
+      box.innerHTML = hits.length ? hits.map(function (a) { return tpRowHtml(a.image_url || '', a.symbol, a.display_name || '', a.contract_address); }).join('') : '<div class="loading">Tidak ditemukan di STON.fi.</div>';
+    });
+    return;
+  }
+  var chainWanted = tpPanel === 'sol' ? 'solana' : ({ '56': 'bsc', '8453': 'base', '1': 'ethereum' })[$('evmChain').value];
+  fetchJson(DS + '/latest/dex/search?q=' + encodeURIComponent(q)).then(function (res) {
+    var pairs = (res && res.pairs) || [];
+    var seen = {}, out = [];
+    pairs.forEach(function (p) {
+      if (!p || p.chainId !== chainWanted || !p.baseToken || seen[p.baseToken.address]) return;
+      seen[p.baseToken.address] = 1;
+      out.push(p);
+    });
+    out.sort(function (x, y) { return (((y.liquidity || {}).usd) || 0) - (((x.liquidity || {}).usd) || 0); });
+    out = out.slice(0, 20);
+    var html = '';
+    var isAddr = tpPanel === 'sol' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(q) : /^0x[0-9a-fA-F]{40}$/.test(q);
+    if (isAddr && !seen[q]) html += tpRowHtml('', 'Tempel alamat', q, q);
+    html += out.map(function (p) { return tpRowHtml((p.info || {}).imageUrl || '', p.baseToken.symbol, p.baseToken.name, p.baseToken.address); }).join('');
+    box.innerHTML = html || '<div class="loading">Tidak ditemukan. Coba simbol lain atau tempel alamat kontraknya.</div>';
+  }).catch(function () { box.innerHTML = '<div class="loading">Pencarian gagal. Coba lagi.</div>'; });
+}
+function tpPick(addr, sym) {
+  closeTokenPicker();
+  if (!addr || !tpSelId) return;
+  var side = (tpSelId === 'solTo' || tpSelId === 'evmTo' || tpSelId === 'tonTo') ? 'buy' : 'sell';
+  if (tpPanel === 'sol') window.swapSetToken('sol', null, addr, sym, side);
+  else if (tpPanel === 'evm') window.swapSetToken('evm', $('evmChain').value, addr, sym, side);
+  else window.swapSetToken('ton', null, addr, sym, side);
+}
+['tonFrom', 'tonTo', 'solFrom', 'solTo', 'evmFrom', 'evmTo'].forEach(function (id) {
+  var sel = $(id); if (!sel) return;
+  if (!sel.dataset.prev) sel.dataset.prev = sel.value;
+  sel.addEventListener('change', function () {
+    if (sel.value === '__add__') {
+      sel.value = sel.dataset.prev || sel.options[0].value;
+      openTokenPicker(id.indexOf('ton') === 0 ? 'ton' : id.indexOf('sol') === 0 ? 'sol' : 'evm', id);
+    } else sel.dataset.prev = sel.value;
+  });
+});
+ensureAddOpt('tonFrom'); ensureAddOpt('tonTo'); ensureAddOpt('solFrom'); ensureAddOpt('solTo');
+$('tokenSheetBg').addEventListener('click', closeTokenPicker);
+$('tpQuery').addEventListener('input', function () { if (tpTimer) clearTimeout(tpTimer); var v = this.value; tpTimer = setTimeout(function () { tpSearch(v); }, 350); });
+$('tpResults').addEventListener('click', function (e) { var r = e.target.closest('.tprow'); if (r) tpPick(r.dataset.addr, r.dataset.sym); });
 </script>
 </body>
 </html>
