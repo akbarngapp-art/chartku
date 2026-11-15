@@ -318,8 +318,9 @@
     <div class="netpanel" id="panel-sol" style="display:none;">
       <div class="addr" id="solAddr"></div>
       <button class="ghostbtn" id="solOpenBtn">Buka di Phantom ↗</button>
+      <button class="ghostbtn" id="solFlareBtn">Buka di Solflare ↗</button>
       <div id="solSwapUi" style="display:none;">
-        <button class="mainbtn" id="solConnectBtn">Sambungkan Phantom</button>
+        <button class="mainbtn" id="solConnectBtn">Sambungkan Wallet</button>
         <div class="cvbox">
           <div class="cvlabel">Dari</div>
           <div class="cvrow">
@@ -338,14 +339,15 @@
         <button class="mainbtn" id="solQuoteBtn">Cek Kurs</button>
         <button class="mainbtn" id="solSwapBtn" disabled>Swap Sekarang</button>
       </div>
-      <p class="sub" style="margin-top:10px;">Kurs & swap dari Jupiter. Di Telegram, buka dulu di Phantom agar wallet terbaca.</p>
+      <p class="sub" style="margin-top:10px;">Kurs & swap dari Jupiter. Wallet yang didukung: Phantom, Solflare, Backpack — atau buka halaman ini dari browser wallet Solana apa pun.</p>
     </div>
 
     <div class="netpanel" id="panel-evm" style="display:none;">
       <div class="addr" id="evmAddr"></div>
       <button class="ghostbtn" id="evmOpenBtn">Buka di MetaMask ↗</button>
       <div id="evmSwapUi" style="display:none;">
-        <button class="mainbtn" id="evmConnectBtn">Sambungkan MetaMask</button>
+        <select id="evmWalletSel" style="display:none;"></select>
+        <button class="mainbtn" id="evmConnectBtn">Sambungkan Wallet</button>
         <label>Jaringan</label>
         <select id="evmChain">
           <option value="56">BSC (BNB Chain)</option>
@@ -370,7 +372,7 @@
         <button class="mainbtn" id="evmQuoteBtn">Cek Kurs</button>
         <button class="mainbtn" id="evmSwapBtn" disabled>Swap Sekarang</button>
       </div>
-      <p class="sub" style="margin-top:10px;">Kurs & rute dari LI.FI (BSC / Base / Ethereum). Di Telegram, buka dulu di MetaMask agar wallet terbaca.</p>
+      <p class="sub" style="margin-top:10px;">Kurs & rute dari LI.FI (BSC / Base / Ethereum). Bisa dibuka dari browser wallet apa pun — MetaMask, OKX, Bitget, Trust, Rabby — wallet terdeteksi otomatis.</p>
     </div>
   </div>
   <p class="muted">Aplikasi ini tidak pernah meminta seed phrase atau private key — semua transaksi ditandatangani di wallet-mu.</p>
@@ -1597,12 +1599,25 @@ var SOL_TOKENS = {
 function solProvider() {
   if (window.phantom && window.phantom.solana) return window.phantom.solana;
   if (window.solana && window.solana.isPhantom) return window.solana;
+  if (window.solflare && window.solflare.isSolflare) return window.solflare;
+  if (window.backpack && window.backpack.isBackpack) return window.backpack;
+  if (window.solana) return window.solana;
   return null;
+}
+function solWalletName() {
+  var p = solProvider();
+  if (!p) return 'Wallet Solana';
+  if (p.isPhantom) return 'Phantom';
+  if (p.isSolflare) return 'Solflare';
+  if (p.isBackpack) return 'Backpack';
+  return 'Wallet Solana';
 }
 var solWallet = '', solQuote = null;
 if (solProvider()) {
   $('solSwapUi').style.display = 'block';
   $('solOpenBtn').style.display = 'none';
+  $('solFlareBtn').style.display = 'none';
+  $('solConnectBtn').textContent = 'Sambungkan ' + solWalletName();
 } else {
   $('solAddr').textContent = 'Wallet Solana belum terdeteksi di halaman ini.';
 }
@@ -1610,14 +1625,20 @@ $('solOpenBtn').addEventListener('click', function () {
   haptic();
   openExt('https://phantom.app/ul/browse/' + encodeURIComponent(location.href));
 });
+$('solFlareBtn').addEventListener('click', function () {
+  haptic();
+  openExt('https://solflare.com/ul/v1/browse/' + encodeURIComponent(location.href));
+});
 $('solConnectBtn').addEventListener('click', function () {
-  var p = solProvider(); if (!p) { toast('Phantom tidak terdeteksi.'); return; }
+  var p = solProvider(); if (!p) { toast('Wallet Solana tidak terdeteksi.'); return; }
   p.connect().then(function (resp) {
-    solWallet = resp.publicKey.toString();
-    $('solAddr').textContent = 'Terhubung: ' + shortAddr(solWallet);
+    var pk = (resp && resp.publicKey) || p.publicKey;
+    solWallet = pk ? pk.toString() : '';
+    if (!solWallet) throw new Error('no key');
+    $('solAddr').textContent = 'Terhubung (' + solWalletName() + '): ' + shortAddr(solWallet);
     $('solConnectBtn').textContent = 'Terhubung ✓';
     haptic();
-  }).catch(function () { toast('Koneksi ditolak di Phantom.'); });
+  }).catch(function () { toast('Koneksi ditolak di wallet.'); });
 });
 $('solFrom').addEventListener('change', function () { syncPair($('solFrom'), $('solTo')); solQuote = null; $('solSwapBtn').disabled = true; });
 $('solTo').addEventListener('change', function () { syncPair($('solTo'), $('solFrom')); solQuote = null; $('solSwapBtn').disabled = true; });
@@ -1640,7 +1661,7 @@ $('solQuoteBtn').addEventListener('click', function () {
     box.innerHTML = 'Kamu terima ≈ <b>' + recv + ' ' + $('solTo').value + '</b>'
       + '<br><span class="muted">Dampak harga: ' + impact.toFixed(2) + '% · Slippage 0,5%</span>';
     $('solSwapBtn').disabled = !solWallet;
-    if (!solWallet) toast('Kurs dapat — sambungkan Phantom untuk swap.');
+    if (!solWallet) toast('Kurs dapat — sambungkan wallet Solana untuk swap.');
   }).catch(function () { box.textContent = 'Gagal mengambil kurs dari Jupiter. Coba lagi.'; });
 });
 $('solSwapBtn').addEventListener('click', function () {
@@ -1656,7 +1677,7 @@ $('solSwapBtn').addEventListener('click', function () {
     var bytes = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     var tx = solanaWeb3.VersionedTransaction.deserialize(bytes);
-    btn.textContent = 'Menunggu tanda tangan di Phantom…';
+    btn.textContent = 'Menunggu tanda tangan di ' + solWalletName() + '…';
     return p.signAndSendTransaction(tx);
   }).then(function (res) {
     var sig = res.signature || res;
@@ -1686,6 +1707,34 @@ var EVM_CHAINS = {
     USDC: { addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6 } } }
 };
 var evmWallet = '', evmQuote = null;
+var evmProv = null;
+function evmNameOf(p) {
+  if (!p) return 'Wallet EVM';
+  if (p === window.okxwallet || p.isOkxWallet) return 'OKX Wallet';
+  if (p.isBitgetWallet || p.isBitKeep) return 'Bitget Wallet';
+  if (p.isRabby) return 'Rabby';
+  if (p.isCoinbaseWallet) return 'Coinbase Wallet';
+  if (p.isTrust || p.isTrustWallet) return 'Trust Wallet';
+  if (p.isMetaMask) return 'MetaMask';
+  return 'Wallet EVM';
+}
+function evmCandidates() {
+  var list = [];
+  function push(p) { if (p && list.indexOf(p) < 0) list.push(p); }
+  if (window.okxwallet) push(window.okxwallet);
+  if (window.bitkeep && window.bitkeep.ethereum) push(window.bitkeep.ethereum);
+  if (window.ethereum) {
+    if (window.ethereum.providers && window.ethereum.providers.length) window.ethereum.providers.forEach(push);
+    push(window.ethereum);
+  }
+  return list;
+}
+function evmProvider() {
+  if (evmProv) return evmProv;
+  var list = evmCandidates();
+  evmProv = list.length ? list[0] : null;
+  return evmProv;
+}
 function evmChain() { return EVM_CHAINS[$('evmChain').value]; }
 function fillEvmTokens() {
   var ch = evmChain();
@@ -1700,12 +1749,30 @@ function fillEvmTokens() {
   t.value = syms.indexOf('USDT') >= 0 ? 'USDT' : syms[1];
   evmQuote = null; $('evmSwapBtn').disabled = true;
 }
-if (window.ethereum) {
+(function initEvmWallet() {
+  var list = evmCandidates();
+  if (!list.length) { $('evmAddr').textContent = 'Wallet EVM belum terdeteksi di halaman ini.'; return; }
   $('evmSwapUi').style.display = 'block';
   $('evmOpenBtn').style.display = 'none';
-} else {
-  $('evmAddr').textContent = 'Wallet EVM belum terdeteksi di halaman ini.';
-}
+  evmProv = list[0];
+  var sel = $('evmWalletSel');
+  if (list.length > 1 && sel) {
+    sel.style.display = 'block';
+    sel.innerHTML = '';
+    list.forEach(function (p, i) {
+      var o = document.createElement('option');
+      o.value = String(i); o.textContent = 'Wallet: ' + evmNameOf(p);
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () {
+      evmProv = list[parseInt(sel.value, 10)] || list[0];
+      evmWallet = '';
+      $('evmConnectBtn').textContent = 'Sambungkan ' + evmNameOf(evmProv);
+      $('evmAddr').textContent = '';
+    });
+  }
+  $('evmConnectBtn').textContent = 'Sambungkan ' + evmNameOf(evmProv);
+})();
 $('evmOpenBtn').addEventListener('click', function () {
   haptic();
   openExt('https://metamask.app.link/dapp/' + location.host + location.pathname);
@@ -1718,21 +1785,24 @@ $('evmFlip').addEventListener('click', function () {
 });
 function padAddr(a) { return a.replace('0x', '').toLowerCase().padStart(64, '0'); }
 function evmEnsureChain() {
+  var prov = evmProvider();
+  if (!prov) return Promise.reject(new Error('Wallet EVM tidak terdeteksi.'));
   var want = '0x' + parseInt($('evmChain').value, 10).toString(16);
-  if (window.ethereum.chainId === want) return Promise.resolve();
-  return window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: want }] });
+  if (prov.chainId === want) return Promise.resolve();
+  return prov.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: want }] });
 }
 $('evmConnectBtn').addEventListener('click', function () {
-  if (!window.ethereum) { toast('MetaMask tidak terdeteksi.'); return; }
-  window.ethereum.request({ method: 'eth_requestAccounts' }).then(function (accs) {
+  var prov = evmProvider();
+  if (!prov) { toast('Wallet EVM tidak terdeteksi.'); return; }
+  prov.request({ method: 'eth_requestAccounts' }).then(function (accs) {
     evmWallet = accs[0];
-    $('evmAddr').textContent = 'Terhubung: ' + shortAddr(evmWallet);
+    $('evmAddr').textContent = 'Terhubung (' + evmNameOf(prov) + '): ' + shortAddr(evmWallet);
     $('evmConnectBtn').textContent = 'Terhubung ✓';
     haptic();
-  }).catch(function () { toast('Koneksi ditolak di MetaMask.'); });
+  }).catch(function () { toast('Koneksi ditolak di wallet.'); });
 });
 $('evmQuoteBtn').addEventListener('click', function () {
-  if (!evmWallet) { toast('Sambungkan MetaMask dulu.'); return; }
+  if (!evmWallet) { toast('Sambungkan wallet EVM dulu.'); return; }
   var ch = evmChain();
   var from = ch.tokens[$('evmFrom').value], to = ch.tokens[$('evmTo').value];
   var units = toUnits($('evmAmount').value, from.dec);
@@ -1754,7 +1824,7 @@ $('evmQuoteBtn').addEventListener('click', function () {
   }).catch(function (e) { box.textContent = 'Gagal mengambil kurs: ' + String(e && e.message || '').slice(0, 100); });
 });
 function evmWaitReceipt(hash, tries) {
-  return window.ethereum.request({ method: 'eth_getTransactionReceipt', params: [hash] }).then(function (rc) {
+  return evmProvider().request({ method: 'eth_getTransactionReceipt', params: [hash] }).then(function (rc) {
     if (rc) return rc;
     if ((tries || 0) > 20) return null;
     return new Promise(function (res) { setTimeout(res, 3000); }).then(function () { return evmWaitReceipt(hash, (tries || 0) + 1); });
@@ -1770,17 +1840,17 @@ $('evmSwapBtn').addEventListener('click', function () {
   if (!from.native && evmQuote.estimate.approvalAddress) {
     var spender = evmQuote.estimate.approvalAddress;
     var need = BigInt(toUnits($('evmAmount').value, from.dec));
-    chain = window.ethereum.request({ method: 'eth_call', params: [{ to: from.addr, data: '0xdd62ed3e' + padAddr(evmWallet) + padAddr(spender) }, 'latest'] })
+    chain = evmProvider().request({ method: 'eth_call', params: [{ to: from.addr, data: '0xdd62ed3e' + padAddr(evmWallet) + padAddr(spender) }, 'latest'] })
       .then(function (res) {
         if (BigInt(res) >= need) return null;
-        btn.textContent = 'Setujui token di MetaMask…';
-        return window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: evmWallet, to: from.addr, data: '0x095ea7b3' + padAddr(spender) + 'f'.repeat(64) }] })
+        btn.textContent = 'Setujui token di wallet…';
+        return evmProvider().request({ method: 'eth_sendTransaction', params: [{ from: evmWallet, to: from.addr, data: '0x095ea7b3' + padAddr(spender) + 'f'.repeat(64) }] })
           .then(function (h) { btn.textContent = 'Menunggu persetujuan…'; return evmWaitReceipt(h); });
       });
   }
   chain.then(function () {
-    btn.textContent = 'Tanda tangani swap di MetaMask…';
-    return window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: evmWallet, to: txReq.to, data: txReq.data, value: txReq.value || '0x0', gas: txReq.gasLimit }] });
+    btn.textContent = 'Tanda tangani swap di wallet…';
+    return evmProvider().request({ method: 'eth_sendTransaction', params: [{ from: evmWallet, to: txReq.to, data: txReq.data, value: txReq.value || '0x0', gas: txReq.gasLimit }] });
   }).then(function (hash) {
     $('evmQuote').innerHTML += '<br>✅ Terkirim: <a href="' + ch.explorer + '/tx/' + esc(hash) + '" target="_blank">lihat transaksi</a>';
     toast('Swap EVM terkirim.');
