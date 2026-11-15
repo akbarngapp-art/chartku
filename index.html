@@ -214,6 +214,36 @@
   .mktbox{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:9px 12px;}
   .mktbox .k{font-size:10.5px; color:var(--hint); letter-spacing:.03em;}
   .mktbox .v{font-size:15px; font-weight:700; margin-top:1px;}
+  .futbtn{flex:1; padding:13px; border:none; border-radius:10px; background:#f0b90b; color:#111; font-size:15px; font-weight:800; cursor:pointer;}
+  .fhead{padding:4px 2px 8px;}
+  .fpair{background:none; border:none; color:var(--text); font-size:17px; font-weight:800; cursor:pointer; padding:0;}
+  .fperp{font-size:10px; background:#f0b90b; color:#111; border-radius:4px; padding:1px 5px; vertical-align:2px;}
+  .fprice{font-size:22px; font-weight:800; margin-top:2px;}
+  .fsub{display:flex; gap:14px; color:var(--hint); font-size:11.5px; margin-top:2px;}
+  .fpairs{display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px;}
+  .fpairbtn{background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:999px; padding:6px 11px; font-size:12.5px; cursor:pointer;}
+  .fpairbtn.active{border-color:#f0b90b; color:#f0b90b;}
+  #fchart{width:100%; height:180px; display:block;}
+  .fpanel{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; margin-top:10px;}
+  .frow2{display:flex; align-items:center; gap:8px;}
+  .frow2 b{margin-left:auto;}
+  .flabel{font-size:11px; color:var(--hint); letter-spacing:.03em; margin:10px 0 5px;}
+  .freset{background:none; border:1px solid var(--border); color:var(--hint); border-radius:8px; padding:3px 9px; font-size:11px; cursor:pointer;}
+  .flev{display:flex; gap:6px;}
+  .flev button{flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:8px 0; font-weight:700; cursor:pointer;}
+  .flev button.active{background:#f0b90b; color:#111; border-color:#f0b90b;}
+  .finput{width:100%; box-sizing:border-box; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px; font-size:15px;}
+  .fprev{font-size:11.5px; color:var(--hint); margin-top:7px; line-height:1.5;}
+  .fls{display:flex; gap:10px; margin-top:12px;}
+  .flong,.fshort{flex:1; padding:13px; border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:800; cursor:pointer;}
+  .flong{background:#0ecb81;} .fshort{background:#f6465d;}
+  .fposwrap{margin-top:14px;}
+  .fposh{font-size:14px; margin:0 0 8px;}
+  .fpos{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:10px 12px; margin-bottom:8px;}
+  .fposrow{display:flex; justify-content:space-between; gap:8px; font-size:12.5px; flex-wrap:wrap;}
+  .fpnl{font-weight:800;} .fpnl.up{color:#0ecb81;} .fpnl.down{color:#f6465d;}
+  .flongt{color:#0ecb81; font-weight:800;} .fshortt{color:#f6465d; font-weight:800;}
+  .fclose{margin-top:8px; width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:8px 0; font-weight:700; cursor:pointer;}
   .homecard h3{margin:2px 0 4px; font-size:15px; display:flex; justify-content:space-between; align-items:center;}
   .homecard h3 .tag{font-size:11px; color:var(--hint); font-weight:600;}
   .minirow .nm2{font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:38vw;}
@@ -286,6 +316,7 @@
   <div class="colhead"><span>Pasangan / Vol 24j</span><span class="c-price" id="colPrice">Harga ⇅</span><span class="c-chg" id="colChg">24j % ⇅</span></div>
   <div id="mktStrip"></div>
   <div id="homeCards"></div>
+  <div class="homecard" id="futCard"><h3>⚡ Trading Futures <span class="tag">LONG / SHORT</span></h3><p class="sub">Buka posisi Long/Short dengan leverage sampai 50x, harga live Binance. Saldo simulasi 10.000 USDT — latihan trading tanpa risiko uang asli.</p><button class="mainbtn" id="futOpenBtn">Mulai Trading Futures</button></div>
   <div id="coinList"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   <p class="muted" id="listNote">250 token teratas menurut kapitalisasi pasar · diperbarui otomatis.</p>
 </section>
@@ -316,7 +347,7 @@
   </div>
   <div class="malegend" id="maLegend"></div>
   <div class="chartwrap"><canvas id="chart" class="chartcv" height="260"></canvas></div>
-  <div class="buysell"><button class="buybtn" id="buyBtn">Beli</button><button class="sellbtn" id="sellBtn">Jual</button></div>
+  <div class="buysell"><button class="buybtn" id="buyBtn">Beli</button><button class="sellbtn" id="sellBtn">Jual</button><button class="futbtn" id="futBtn">⚡ Futures</button></div>
   <div class="stats">
     <div class="stat"><div class="k" id="dL1">Tertinggi 24j</div><div class="v" id="dV1">-</div></div>
     <div class="stat"><div class="k" id="dL2">Terendah 24j</div><div class="v" id="dV2">-</div></div>
@@ -448,6 +479,27 @@
 </div>
 
 <!-- ============ LIVE CHAT ============ -->
+<section class="view" id="viewFutures">
+  <div class="fhead">
+    <button class="fpair" id="fPairBtn">BTCUSDT <span class="fperp">PERP</span> ▾</button>
+    <div class="fprice"><span id="fPrice">-</span> <span id="fChg"></span></div>
+    <div class="fsub"><span>Mark Price · Binance</span><span id="fHigh">Tertinggi -</span><span id="fLow">Terendah -</span></div>
+  </div>
+  <div class="fpairs" id="fPairs" style="display:none;"></div>
+  <canvas id="fchart"></canvas>
+  <div class="fpanel">
+    <div class="frow2"><span class="flabel" style="margin:0;">SALDO SIMULASI</span><b id="fBal">10.000,00 USDT</b><button class="freset" id="fReset">Reset</button></div>
+    <div class="flabel">LEVERAGE</div>
+    <div class="flev" id="fLev"><button data-lev="1">1x</button><button data-lev="5">5x</button><button data-lev="10" class="active">10x</button><button data-lev="20">20x</button><button data-lev="50">50x</button></div>
+    <div class="flabel">MARGIN (USDT)</div>
+    <input class="finput" id="fMargin" type="number" inputmode="decimal" value="100" min="1">
+    <div class="fprev" id="fPrev"></div>
+    <div class="fls"><button class="flong" id="fLong">Long / Beli</button><button class="fshort" id="fShort">Short / Jual</button></div>
+    <p class="sub" style="margin-top:8px;">Mode simulasi: dana virtual, harga live. Bukan uang asli.</p>
+  </div>
+  <div class="fposwrap"><h3 class="fposh">Posisi Terbuka</h3><div id="fPos"></div></div>
+  <div class="fposwrap"><h3 class="fposh">Riwayat</h3><div id="fHist"></div></div>
+</section>
 <section class="view" id="viewChat">
   <div class="card hero">
     <div><span class="livedot"></span><span class="muted" style="font-size:12px;">SEDANG LIVE</span></div>
@@ -615,6 +667,8 @@ function showView(name) {
   $('viewDetail').classList.toggle('active', name === 'chart' && !!currentDetail);
   $('viewSwap').classList.toggle('active', name === 'swap');
   $('viewChat').classList.toggle('active', name === 'chat');
+  $('viewFutures').classList.toggle('active', name === 'futures');
+  if (name !== 'futures' && window.futStop) window.futStop();
   if (name !== 'chart') stopLive();
   if (tg && tg.BackButton) {
     if (name === 'chart' && currentDetail) { tg.BackButton.show(); } else { tg.BackButton.hide(); }
@@ -990,6 +1044,7 @@ function selectCat(cat) {
   $('listNote').textContent = CAT_NOTES[cat] || '';
   $('homeCards').style.display = cat === 'all' ? '' : 'none';
   $('mktStrip').style.display = cat === 'all' ? '' : 'none';
+  $('futCard').style.display = cat === 'all' ? '' : 'none';
   haptic();
   if (cat === 'all') { loadHomeCards(); loadGlobalStats(); }
   var cached = catCache[cat];
@@ -1038,7 +1093,7 @@ var searchTimer = null;
 $('search').addEventListener('input', function () {
   var q = this.value.trim();
   clearTimeout(searchTimer);
-  if (!q) { $('homeCards').style.display = currentCat === 'all' ? '' : 'none'; $('mktStrip').style.display = currentCat === 'all' ? '' : 'none'; loadCat(currentCat, true); return; }
+  if (!q) { $('homeCards').style.display = currentCat === 'all' ? '' : 'none'; $('mktStrip').style.display = currentCat === 'all' ? '' : 'none'; $('futCard').style.display = currentCat === 'all' ? '' : 'none'; loadCat(currentCat, true); return; }
   if (currentCat === 'all' || currentCat === 'meme') {
     var rows = (catCache[currentCat] && catCache[currentCat].rows) || allCoins;
     var f = rows.filter(function (c) { return c.symbol.toLowerCase().indexOf(q.toLowerCase()) !== -1 || c.name.toLowerCase().indexOf(q.toLowerCase()) !== -1; });
@@ -1051,6 +1106,7 @@ $('search').addEventListener('input', function () {
 function remoteSearch(q) {
   $('homeCards').style.display = 'none';
   $('mktStrip').style.display = 'none';
+  $('futCard').style.display = 'none';
   var cgP = fetchJson(CG + '/search?query=' + encodeURIComponent(q)).catch(function () { return null; });
   var gtP = fetchJson(GT + '/search/pools?query=' + encodeURIComponent(q) + '&include=base_token').catch(function () { return null; });
   var dsP = fetchJson(DS + '/latest/dex/search?q=' + encodeURIComponent(q)).catch(function () { return null; });
@@ -1190,6 +1246,11 @@ $('favBtn').addEventListener('click', function () {
 });
 $('buyBtn').addEventListener('click', function () { gotoSwap('buy'); });
 $('sellBtn').addEventListener('click', function () { gotoSwap('sell'); });
+$('futBtn').addEventListener('click', function () {
+  haptic();
+  var sym = ((currentDetail && currentDetail.symbol) || '').toUpperCase() + 'USDT';
+  if (window.futOpen) window.futOpen(sym);
+});
 function gotoSwap(side) {
   haptic();
   var D = currentDetail;
@@ -2332,6 +2393,192 @@ $('tpResults').addEventListener('click', function (e) { var r = e.target.closest
 </script>
 </body>
 </html>
+
+/* ================= FUTURES — simulasi, harga live Binance ================= */
+var FUT_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'LTCUSDT', 'NEARUSDT'];
+var fut = { pair: 'BTCUSDT', lev: 10, price: 0, rows: [], timer: null, prices: {} };
+var fstore = { bal: 10000, pos: [], hist: [] };
+try { var fsaved = JSON.parse(localStorage.getItem('koinku-futures-v1') || 'null'); if (fsaved && typeof fsaved.bal === 'number') fstore = fsaved; } catch (e) {}
+function fSave() { try { localStorage.setItem('koinku-futures-v1', JSON.stringify(fstore)); } catch (e) {} }
+function fFmt(n) { return Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fPriceFmt(p) { p = parseFloat(p) || 0; return p >= 100 ? p.toFixed(2) : p >= 1 ? p.toFixed(3) : p.toFixed(5); }
+window.futStop = function () { if (fut.timer) { clearInterval(fut.timer); fut.timer = null; } };
+window.futOpen = function (pair) {
+  if (pair && FUT_PAIRS.indexOf(pair) >= 0) fut.pair = pair;
+  else if (pair && pair !== fut.pair) toast('Pair futures koin ini belum ada — membuka ' + fut.pair + '.');
+  showView('futures');
+  $('fPairBtn').innerHTML = fut.pair + ' <span class="fperp">PERP</span> \u25be';
+  fLoadPair();
+  fRender();
+  window.futStop();
+  fut.timer = setInterval(fTick, 4000);
+};
+function fLoadPair() {
+  fetchJson(BIN + '/api/v3/klines?symbol=' + fut.pair + '&interval=1m&limit=110').then(function (rows) {
+    fut.rows = (rows || []).map(function (k) { return { o: +k[1], h: +k[2], l: +k[3], c: +k[4] }; });
+    if (fut.rows.length) { fut.price = fut.rows[fut.rows.length - 1].c; fut.prices[fut.pair] = fut.price; }
+    fDraw(); fHead(); fPrev();
+  }).catch(function () {});
+  fetchJson(BIN + '/api/v3/ticker/24hr?symbol=' + fut.pair).then(function (t) {
+    if (!t) return;
+    fut.price = parseFloat(t.lastPrice); fut.prices[fut.pair] = fut.price;
+    $('fChg').innerHTML = chgHtml(parseFloat(t.priceChangePercent));
+    $('fHigh').textContent = 'Tertinggi ' + fPriceFmt(parseFloat(t.highPrice));
+    $('fLow').textContent = 'Terendah ' + fPriceFmt(parseFloat(t.lowPrice));
+    fHead(); fPrev();
+  }).catch(function () {});
+}
+function fHead() { if (fut.price) $('fPrice').textContent = fPriceFmt(fut.price); }
+function fTick() {
+  var pairs = {};
+  pairs[fut.pair] = 1;
+  fstore.pos.forEach(function (p) { pairs[p.pair] = 1; });
+  var url = BIN + '/api/v3/ticker/price?symbols=' + encodeURIComponent(JSON.stringify(Object.keys(pairs)));
+  fetchJson(url).then(function (arr) {
+    (arr || []).forEach(function (t) { fut.prices[t.symbol] = parseFloat(t.price); });
+    if (fut.prices[fut.pair]) {
+      fut.price = fut.prices[fut.pair];
+      if (fut.rows.length) fut.rows[fut.rows.length - 1].c = fut.price;
+      fHead(); fDraw(); fPrev();
+    }
+    fCheckLiq();
+    fRenderPos();
+  }).catch(function () {});
+}
+function fDraw() {
+  var cv = $('fchart'); if (!cv || !fut.rows.length) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = cv.clientWidth, H = 180;
+  if (!W) return;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  var rows = fut.rows.slice(-70);
+  var hi = -Infinity, lo = Infinity;
+  rows.forEach(function (r) { if (r.h > hi) hi = r.h; if (r.l < lo) lo = r.l; });
+  var pad = (hi - lo) * 0.08 || 1; hi += pad; lo -= pad;
+  var plotW = W - 54, cw = plotW / rows.length;
+  function Y(p) { return H - (p - lo) / (hi - lo) * H; }
+  ctx.strokeStyle = 'rgba(128,140,160,.25)'; ctx.fillStyle = '#8a94a6'; ctx.font = '9px sans-serif'; ctx.lineWidth = 1;
+  for (var g = 0; g <= 3; g++) {
+    var gy = Math.round(H / 3 * g) + 0.5, gp = hi - (hi - lo) * g / 3;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(plotW, gy); ctx.stroke();
+    ctx.fillText(fPriceFmt(gp), plotW + 4, gy + 3);
+  }
+  rows.forEach(function (r, i) {
+    var x = i * cw + cw / 2, up = r.c >= r.o;
+    ctx.strokeStyle = up ? '#0ecb81' : '#f6465d';
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath(); ctx.moveTo(x, Y(r.h)); ctx.lineTo(x, Y(r.l)); ctx.stroke();
+    var bw = Math.max(1, cw * 0.62);
+    var y1 = Y(Math.max(r.o, r.c)), y2 = Y(Math.min(r.o, r.c));
+    ctx.fillRect(x - bw / 2, y1, bw, Math.max(1, y2 - y1));
+  });
+}
+function fPrev() {
+  var el = $('fPrev'); if (!el) return;
+  var margin = parseFloat((($('fMargin').value || '') + '').replace(',', '.')) || 0;
+  if (!fut.price || !margin) { el.textContent = ''; return; }
+  var size = margin * fut.lev, qty = size / fut.price;
+  var liqL = fut.price * (1 - 1 / fut.lev + 0.005), liqS = fut.price * (1 + 1 / fut.lev - 0.005);
+  el.textContent = 'Ukuran posisi \u2248 ' + fFmt(size) + ' USDT (' + qty.toFixed(4) + ' ' + fut.pair.replace('USDT', '') + ') \u00b7 Liq Long \u2248 ' + fPriceFmt(liqL) + ' \u00b7 Liq Short \u2248 ' + fPriceFmt(liqS);
+}
+function fPnl(p) { var m = fut.prices[p.pair] || p.entry; return (m - p.entry) * p.qty * (p.side === 'long' ? 1 : -1); }
+function fOpenPos(side) {
+  haptic();
+  if (!fut.price) { toast('Harga belum dimuat, tunggu sebentar.'); return; }
+  var margin = parseFloat((($('fMargin').value || '') + '').replace(',', '.'));
+  if (!margin || margin <= 0) { toast('Isi margin dulu.'); return; }
+  if (margin > fstore.bal) { toast('Saldo simulasi tidak cukup.'); return; }
+  var entry = fut.price, lev = fut.lev;
+  var qty = margin * lev / entry;
+  var liq = side === 'long' ? entry * (1 - 1 / lev + 0.005) : entry * (1 + 1 / lev - 0.005);
+  fstore.bal -= margin;
+  fstore.pos.push({ id: 'p' + Date.now(), pair: fut.pair, side: side, margin: margin, lev: lev, entry: entry, qty: qty, liq: liq, t: Date.now() });
+  fSave(); fRender(); fPrev();
+  toast((side === 'long' ? 'Long' : 'Short') + ' ' + fut.pair + ' ' + lev + 'x @ ' + fPriceFmt(entry));
+}
+function fClosePos(id, reason, atPrice) {
+  var ix = -1, p = null;
+  fstore.pos.forEach(function (x, i) { if (x.id === id) { ix = i; p = x; } });
+  if (!p) return;
+  var mark = atPrice || fut.prices[p.pair] || p.entry;
+  var pnl = (mark - p.entry) * p.qty * (p.side === 'long' ? 1 : -1);
+  if (reason === 'Likuidasi' || pnl < -p.margin) pnl = -p.margin;
+  fstore.bal += p.margin + pnl;
+  fstore.pos.splice(ix, 1);
+  fstore.hist.unshift({ pair: p.pair, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: mark, pnl: pnl, reason: reason || 'Tutup', t: Date.now() });
+  if (fstore.hist.length > 30) fstore.hist.length = 30;
+  fSave(); fRender();
+  if (reason === 'Likuidasi') toast('Posisi ' + p.pair + ' terlikuidasi.');
+}
+function fCheckLiq() {
+  fstore.pos.slice().forEach(function (p) {
+    var m = fut.prices[p.pair]; if (!m) return;
+    if (p.side === 'long' && m <= p.liq) fClosePos(p.id, 'Likuidasi', p.liq);
+    else if (p.side === 'short' && m >= p.liq) fClosePos(p.id, 'Likuidasi', p.liq);
+  });
+}
+function fRender() {
+  $('fBal').textContent = fFmt(fstore.bal) + ' USDT';
+  fRenderPos(); fRenderHist();
+}
+function fRenderPos() {
+  var el = $('fPos'); if (!el) return;
+  if (!fstore.pos.length) { el.innerHTML = '<div class="loading">Belum ada posisi terbuka.</div>'; return; }
+  el.innerHTML = fstore.pos.map(function (p) {
+    var pnl = fPnl(p), roe = pnl / p.margin * 100;
+    var mark = fut.prices[p.pair] || p.entry;
+    return '<div class="fpos"><div class="fposrow"><b>' + p.pair + '</b><span class="' + (p.side === 'long' ? 'flongt' : 'fshortt') + '">' + (p.side === 'long' ? 'LONG' : 'SHORT') + ' ' + p.lev + 'x</span><span class="fpnl ' + (pnl >= 0 ? 'up' : 'down') + '">' + (pnl >= 0 ? '+' : '') + fFmt(pnl) + ' USDT (' + (roe >= 0 ? '+' : '') + roe.toFixed(1).replace('.', ',') + '%)</span></div>'
+      + '<div class="fposrow muted" style="margin-top:3px;"><span>Entry ' + fPriceFmt(p.entry) + '</span><span>Mark ' + fPriceFmt(mark) + '</span><span>Liq ' + fPriceFmt(p.liq) + '</span><span>Margin ' + fFmt(p.margin) + '</span></div>'
+      + '<button class="fclose" data-close="' + p.id + '">Tutup Posisi</button></div>';
+  }).join('');
+}
+function fRenderHist() {
+  var el = $('fHist'); if (!el) return;
+  if (!fstore.hist.length) { el.innerHTML = '<div class="loading">Belum ada riwayat.</div>'; return; }
+  el.innerHTML = fstore.hist.slice(0, 12).map(function (h) {
+    return '<div class="fpos"><div class="fposrow"><b>' + h.pair + '</b><span class="' + (h.side === 'long' ? 'flongt' : 'fshortt') + '">' + (h.side === 'long' ? 'LONG' : 'SHORT') + ' ' + h.lev + 'x</span><span class="fpnl ' + (h.pnl >= 0 ? 'up' : 'down') + '">' + (h.pnl >= 0 ? '+' : '') + fFmt(h.pnl) + ' USDT</span></div>'
+      + '<div class="fposrow muted" style="margin-top:3px;"><span>Entry ' + fPriceFmt(h.entry) + '</span><span>Exit ' + fPriceFmt(h.exit) + '</span><span>' + h.reason + '</span></div></div>';
+  }).join('');
+}
+$('fPairBtn').addEventListener('click', function () {
+  var box = $('fPairs');
+  if (box.style.display === 'none') {
+    box.innerHTML = FUT_PAIRS.map(function (p) { return '<button class="fpairbtn' + (p === fut.pair ? ' active' : '') + '" data-pair="' + p + '">' + p + '</button>'; }).join('');
+    box.style.display = 'flex';
+  } else box.style.display = 'none';
+});
+$('fPairs').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-pair]'); if (!b) return;
+  fut.pair = b.getAttribute('data-pair');
+  $('fPairs').style.display = 'none';
+  $('fPairBtn').innerHTML = fut.pair + ' <span class="fperp">PERP</span> \u25be';
+  fLoadPair();
+});
+$('fLev').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-lev]'); if (!b) return;
+  fut.lev = parseInt(b.getAttribute('data-lev'), 10);
+  var bs = this.querySelectorAll('button');
+  for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i] === b);
+  fPrev();
+});
+$('fMargin').addEventListener('input', fPrev);
+$('fLong').addEventListener('click', function () { fOpenPos('long'); });
+$('fShort').addEventListener('click', function () { fOpenPos('short'); });
+$('fPos').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-close]'); if (!b) return;
+  fClosePos(b.getAttribute('data-close'), 'Tutup');
+  toast('Posisi ditutup.');
+});
+$('fReset').addEventListener('click', function () {
+  fstore = { bal: 10000, pos: [], hist: [] };
+  fSave(); fRender();
+  toast('Simulasi direset: saldo 10.000 USDT.');
+});
+var futOpenBtnEl = $('futOpenBtn');
+if (futOpenBtnEl) futOpenBtnEl.addEventListener('click', function () { haptic(); window.futOpen('BTCUSDT'); });
 <script type="module">
 /* Swap TON di dalam KoinKu: transaksi dibangun dengan SDK resmi STON.fi,
    lalu ditandatangani lewat TonConnect — pengguna tidak pindah aplikasi. */
